@@ -42,3 +42,13 @@
 - **Razón:** Auditoría del Verificador de Backend con veredicto **APROBADO ✅** y 11/11 tests automatizados en `pytest` pasando al 100% (0 fallos).
 - **Impacto:** Backend del Sprint 1 listo y versionado en Git. Se habilita el inicio del **Sprint 1B (Frontend)**.
 
+---
+
+## [19/10/2026] — Cierre y Aprobación del Sprint 1B (Frontend: Login OAuth2 Google/Microsoft, Layout Monday, Workspaces, Boards y Personalizador de Estados)
+- **Decisión:**
+  1. Se aprueba e integra en `frontend/` la aplicación en **React 18 + Vite + TypeScript + Tailwind CSS + Lucide Icons + Zustand**.
+  2. Se valida el flujo de autenticación OAuth2 / OIDC con **Google** y **Microsoft** en `LoginScreen.tsx` y `useAuthStore.ts` (modo OAuth real y modo `dev_simulator` con cambio rápido de usuario en cabecera).
+  3. Se valida la navegación jerárquica de Workspaces y Tableros en `Sidebar.tsx`, la vista de tablero en `BoardView.tsx` con los 5 estados iniciales (`Listo`, `En Proceso`, `Bloqueado`, `Traspasado`, `Sin Empezar`) y el modal interactivo `StatusManagerModal.tsx` con actualizaciones optimistas y rollback.
+- **Razón:** Auditoría del Verificador de Frontend con veredicto **APROBADO ✅**, 7/7 tests automatizados en `Vitest` pasando al 100% y build de producción (`tsc -b && vite build`) limpio con 0 errores.
+- **Impacto:** Sprint 1 completado de punta a punta (Backend + Frontend). Se inicia el **Sprint 2 (Motor CRUD e Interactividad Inline de Grupos e Items)**.
+
