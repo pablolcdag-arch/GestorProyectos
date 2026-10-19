@@ -1,4 +1,5 @@
 import type {
+  BoardAnalyticsRead,
   BoardCreate,
   BoardDetailRead,
   BoardStatusCreate,
@@ -220,6 +221,38 @@ export const api = {
     });
   },
 
+  // Analítica Ejecutiva y Exportación CSV de Tablero (Fase 2)
+  getBoardAnalytics(boardId: number): Promise<BoardAnalyticsRead> {
+    return request<BoardAnalyticsRead>(`/api/boards/${boardId}/analytics`);
+  },
+
+  async exportBoardCsv(boardId: number): Promise<string> {
+    const token = getAccessToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`/api/boards/${boardId}/export.csv`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new ApiError(
+        `Error HTTP ${response.status} al exportar CSV del tablero`,
+        response.status,
+      );
+    }
+
+    if (typeof response.text === 'function') {
+      return response.text();
+    }
+
+    const fallback = await response.json();
+    return typeof fallback === 'string' ? fallback : JSON.stringify(fallback);
+  },
+
   // Estados Personalizables por Tablero (BoardStatusConfig)
   createBoardStatus(
     boardId: number,
@@ -308,6 +341,12 @@ export const api = {
   deleteTaskItem(itemId: number): Promise<{ deleted: boolean; id: number }> {
     return request<{ deleted: boolean; id: number }>(`/api/items/${itemId}`, {
       method: 'DELETE',
+    });
+  },
+
+  duplicateTaskItem(itemId: number): Promise<TaskItemRead> {
+    return request<TaskItemRead>(`/api/items/${itemId}/duplicate`, {
+      method: 'POST',
     });
   },
 

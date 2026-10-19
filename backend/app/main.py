@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import app.database as db_module
 from app.config import settings
-from app.database import Base
+from app.database import Base, ensure_phase2_schema
 from app.routers import (
     auth_router,
     boards_router,
@@ -23,8 +23,9 @@ from app.seed import seed_initial_data
 
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
-    """Inicializa tablas y carga datos semilla si la base de datos está vacía."""
+    """Inicializa tablas, aplica migraciones defensivas y carga datos semilla si la DB está vacía."""
     Base.metadata.create_all(bind=db_module.engine)
+    ensure_phase2_schema(db_module.engine)
     with db_module.SessionLocal() as db:
         seed_initial_data(db)
     yield

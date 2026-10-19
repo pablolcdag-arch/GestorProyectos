@@ -97,7 +97,10 @@ export interface TaskItemCreate {
   status_key?: string;
   priority?: string;
   assignee_id?: number | null;
+  start_date?: string | null;
   due_date?: string | null;
+  estimated_hours?: number;
+  budget?: number;
   notes?: string;
   position?: number;
 }
@@ -108,7 +111,10 @@ export interface TaskItemUpdate {
   status_key?: string;
   priority?: string;
   assignee_id?: number | null;
+  start_date?: string | null;
   due_date?: string | null;
+  estimated_hours?: number;
+  budget?: number;
   notes?: string;
   position?: number;
 }
@@ -122,7 +128,10 @@ export interface TaskItemRead {
   priority: string;
   assignee_id?: number | null;
   assignee?: UserRead | null;
+  start_date?: string | null;
   due_date?: string | null;
+  estimated_hours?: number;
+  budget?: number;
   notes: string;
   position: number;
   comments_count?: number;
@@ -190,6 +199,54 @@ export interface TaskGroupRead {
   position: number;
   collapsed: boolean;
   items: TaskItemRead[];
+}
+
+export interface StatusBreakdownItem {
+  key: string;
+  label: string;
+  color: string;
+  count: number;
+  percentage: number;
+}
+
+export interface PriorityBreakdownItem {
+  priority: string;
+  count: number;
+}
+
+export interface AssigneeWorkloadItem {
+  user_id: number | null;
+  full_name: string;
+  color: string;
+  total_items: number;
+  completed_items: number;
+  estimated_hours: number;
+  budget: number;
+}
+
+export interface GroupMetricsItem {
+  group_id: number;
+  title: string;
+  color: string;
+  total_items: number;
+  completed_items: number;
+  total_estimated_hours: number;
+  total_budget: number;
+}
+
+export interface BoardAnalyticsRead {
+  board_id: number;
+  total_items: number;
+  completed_items: number;
+  completion_rate: number;
+  overdue_items: number;
+  unassigned_items: number;
+  total_estimated_hours: number;
+  total_budget: number;
+  by_status: StatusBreakdownItem[];
+  by_priority: PriorityBreakdownItem[];
+  by_assignee: AssigneeWorkloadItem[];
+  by_group: GroupMetricsItem[];
 }
 
 export interface BoardSummaryRead {

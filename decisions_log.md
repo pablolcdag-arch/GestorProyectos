@@ -91,3 +91,13 @@
 - **Razón:** Auditoría del Verificador de Frontend con veredicto **APROBADO ✅**, 15/15 tests automatizados en `Vitest` (4 suites) pasando al 100% y build de producción limpio con 0 errores.
 - **Impacto:** **MVP Fase 1 completado al 100%** con 34 pruebas automatizadas totales en verde (**19 en Backend `pytest` + 15 en Frontend `Vitest`**).
 
+---
+
+## [19/10/2026] — Cierre y Aprobación de la Fase 2 Completa (Analítica Ejecutiva, Columnas de Presupuesto/Horas, Cronograma, Duplicación y CSV)
+- **Decisión:**
+  1. Se aprueba e integra en `backend/` la ampliación de `TaskItem` (`start_date`, `estimated_hours`, `budget`) con validación de no negatividad (`validate_non_negative_float`), migración defensiva e idempotente de esquema SQLite (`ensure_phase2_schema`), endpoints de duplicación de tareas (`POST /api/items/{item_id}/duplicate`), motor de analítica de tablero (`GET /api/boards/{board_id}/analytics`) y exportación a CSV (`GET /api/boards/{board_id}/export.csv`).
+  2. Se aprueba e integra en `frontend/` la Vista Tabla con inputs inline de horas y presupuesto, sumatorias automáticas en el pie de grupo (`tfoot`), botón de duplicación por fila, botón de exportación CSV en cabecera, la nueva Vista Cronograma / Calendario (`TimelineCalendarView.tsx`) con rango de fechas y duración en días, y la nueva Vista Dashboard Ejecutivo (`DashboardView.tsx`) con KPIs en vivo y desgloses por estado, prioridad, responsable y grupo.
+- **Razón:** Auditoría independiente de los Verificadores de Backend y Frontend con veredicto **APROBADO ✅** en ambos roles, 43 pruebas automatizadas locales pasando al 100% (**24 en Pytest + 19 en Vitest**) y compilación limpia de producción.
+- **Impacto:** Fase 2 completada al 100% sin regresiones. Se habilita la planificación e implementación de la **Fase 3 (Vista Global 'Mi Trabajo', Automatizaciones estilo Monday y Empaquetado Productivo Docker)**.
+
+

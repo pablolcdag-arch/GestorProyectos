@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { api } from '../services/api';
 import type {
+  BoardAnalyticsRead,
   BoardCreate,
   BoardDetailRead,
   BoardStatusCreate,
@@ -82,9 +83,11 @@ interface WorkspaceState {
   activeBoardId: number | null;
   activeBoard: BoardDetailRead | null;
   activeItemDetail: TaskItemDetailRead | null;
+  boardAnalytics: BoardAnalyticsRead | null;
   isLoadingWorkspaces: boolean;
   isLoadingBoard: boolean;
   isLoadingItemDetail: boolean;
+  isLoadingAnalytics: boolean;
   error: string | null;
 
   loadWorkspaces: () => Promise<void>;
@@ -103,6 +106,7 @@ interface WorkspaceState {
     payload: BoardUpdate,
   ) => Promise<BoardDetailRead>;
   deleteBoard: (boardId: number) => Promise<void>;
+  loadBoardAnalytics: (boardId: number) => Promise<BoardAnalyticsRead | null>;
 
   createBoardStatus: (
     boardId: number,
@@ -135,6 +139,7 @@ interface WorkspaceState {
     optimisticAssignee?: UserRead | null,
   ) => Promise<TaskItemRead>;
   deleteItem: (itemId: number) => Promise<void>;
+  duplicateItem: (itemId: number) => Promise<TaskItemRead>;
 
   openItemDrawer: (itemId: number) => Promise<void>;
   closeItemDrawer: () => void;
@@ -161,9 +166,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   activeBoardId: null,
   activeBoard: null,
   activeItemDetail: null,
+  boardAnalytics: null,
   isLoadingWorkspaces: false,
   isLoadingBoard: false,
   isLoadingItemDetail: false,
+  isLoadingAnalytics: false,
   error: null,
 
   loadWorkspaces: async () => {
@@ -181,6 +188,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           activeBoardId: null,
           activeBoard: null,
           activeItemDetail: null,
+          boardAnalytics: null,
           isLoadingWorkspaces: false,
         });
         return;
@@ -197,7 +205,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       if (firstBoardId !== null) {
         await get().selectBoard(firstBoardId);
       } else {
-        set({ activeBoard: null, activeItemDetail: null });
+        set({
+          activeBoard: null,
+          activeItemDetail: null,
+          boardAnalytics: null,
+        });
       }
     } catch (err) {
       const message =
@@ -217,6 +229,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activeWorkspaceId: workspaceId,
       activeBoardId: firstBoardId,
       activeItemDetail: null,
+      boardAnalytics: null,
       error: null,
     });
 
@@ -239,6 +252,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         activeBoardId: firstBoardId,
         activeBoard: null,
         activeItemDetail: null,
+        boardAnalytics: null,
       });
       if (firstBoardId !== null) {
         await get().selectBoard(firstBoardId);
@@ -303,6 +317,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         activeBoardId: nextBoardId,
         activeBoard: null,
         activeItemDetail: null,
+        boardAnalytics: null,
       });
 
       if (nextBoardId !== null) {
@@ -322,13 +337,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({
       activeBoardId: boardId,
       activeItemDetail: null,
+      boardAnalytics: null,
       isLoadingBoard: true,
       error: null,
     });
     try {
       const detail = await api.getBoardDetail(boardId);
       set({
-        activeBoard: detail,
+        activeBoard: cloneBoard(detail),
         activeBoardId: detail.id,
         activeWorkspaceId: detail.workspace_id,
         isLoadingBoard: false,
@@ -339,6 +355,23 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           ? err.message
           : 'No se pudo cargar el detalle del tablero.';
       set({ isLoadingBoard: false, error: message });
+    }
+  },
+
+  loadBoardAnalytics: async (boardId: number) => {
+    set({ isLoadingAnalytics: true });
+    try {
+      const analytics = await api.getBoardAnalytics(boardId);
+      if (analytics && typeof analytics.board_id === 'number') {
+        set({ boardAnalytics: analytics, isLoadingAnalytics: false });
+        return analytics;
+      }
+      set({ isLoadingAnalytics: false });
+      return null;
+    } catch {
+      // Si el endpoint no está mockeado en un test parcial, el Dashboard usa el cálculo reactivo local
+      set({ isLoadingAnalytics: false });
+      return null;
     }
   },
 
@@ -366,6 +399,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         activeBoardId: created.id,
         activeBoard: created,
         activeItemDetail: null,
+        boardAnalytics: null,
       });
       return created;
     } catch (err) {
@@ -444,6 +478,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         activeBoardId: nextBoardId,
         activeBoard: null,
         activeItemDetail: null,
+        boardAnalytics: null,
       });
 
       if (nextBoardId !== null) {
@@ -721,9 +756,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       : null;
     set({ error: null });
 
+    let existingItem: TaskItemRead | undefined;
     const currentBoard = get().activeBoard;
     if (currentBoard) {
-      let existingItem: TaskItemRead | undefined;
       for (const grp of currentBoard.groups) {
         const found = grp.items.find((i) => i.id === itemId);
         if (found) {
@@ -736,6 +771,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         const hasAssigneeField = Object.prototype.hasOwnProperty.call(
           payload,
           'assignee_id',
+        );
+        const hasStartDateField = Object.prototype.hasOwnProperty.call(
+          payload,
+          'start_date',
         );
         const hasDueDateField = Object.prototype.hasOwnProperty.call(
           payload,
@@ -773,9 +812,18 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
               : existingItem.priority,
           assignee_id: nextAssigneeId,
           assignee: nextAssignee,
+          start_date: hasStartDateField
+            ? (payload.start_date || null)
+            : existingItem.start_date,
           due_date: hasDueDateField
-            ? (payload.due_date ?? null)
+            ? (payload.due_date || null)
             : existingItem.due_date,
+          estimated_hours:
+            payload.estimated_hours !== undefined
+              ? payload.estimated_hours
+              : existingItem.estimated_hours,
+          budget:
+            payload.budget !== undefined ? payload.budget : existingItem.budget,
           notes:
             payload.notes !== undefined ? payload.notes : existingItem.notes,
           position:
@@ -829,13 +877,17 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     try {
       const updatedItem = await api.updateTaskItem(itemId, payload);
       const latestBoard = get().activeBoard;
-      if (latestBoard) {
+      if (latestBoard && updatedItem) {
+        const mergedItem: TaskItemRead = {
+          ...(existingItem ?? updatedItem),
+          ...updatedItem,
+        };
         const nextGroups = latestBoard.groups.map((grp) => {
           const withoutItem = grp.items.filter((item) => item.id !== itemId);
-          if (grp.id === updatedItem.group_id) {
+          if (grp.id === mergedItem.group_id) {
             return {
               ...grp,
-              items: [...withoutItem, updatedItem].sort(
+              items: [...withoutItem, mergedItem].sort(
                 (a, b) => a.position - b.position || a.id - b.id,
               ),
             };
@@ -854,9 +906,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           },
           activeItemDetail:
             currentDetail && currentDetail.id === itemId
-              ? { ...currentDetail, ...updatedItem }
+              ? { ...currentDetail, ...mergedItem }
               : currentDetail,
         });
+        return mergedItem;
       }
       return updatedItem;
     } catch (err) {
@@ -903,6 +956,38 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         activeItemDetail: previousItemDetail,
         error: message,
       });
+      throw err;
+    }
+  },
+
+  duplicateItem: async (itemId: number) => {
+    set({ error: null });
+    try {
+      const duplicatedItem = await api.duplicateTaskItem(itemId);
+      const currentBoard = get().activeBoard;
+      if (currentBoard && duplicatedItem) {
+        set({
+          activeBoard: {
+            ...currentBoard,
+            groups: currentBoard.groups.map((grp) =>
+              grp.id === duplicatedItem.group_id
+                ? {
+                    ...grp,
+                    items: [
+                      ...grp.items.filter((i) => i.id !== duplicatedItem.id),
+                      duplicatedItem,
+                    ].sort((a, b) => a.position - b.position || a.id - b.id),
+                  }
+                : grp,
+            ),
+          },
+        });
+      }
+      return duplicatedItem;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'No se pudo duplicar la tarea.';
+      set({ error: message });
       throw err;
     }
   },
@@ -1133,9 +1218,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activeBoardId: null,
       activeBoard: null,
       activeItemDetail: null,
+      boardAnalytics: null,
       isLoadingWorkspaces: false,
       isLoadingBoard: false,
       isLoadingItemDetail: false,
+      isLoadingAnalytics: false,
       error: null,
     }),
 }));

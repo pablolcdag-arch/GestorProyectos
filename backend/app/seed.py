@@ -21,6 +21,7 @@ from app.models import (
 def seed_initial_data(db: Session) -> None:
     """Puebla la base de datos con el equipo inicial, workspaces y tableros si está vacía."""
     if db.query(User).count() > 0:
+        dirty = False
         # Si la DB local fue creada en Sprints previos, asegurar semilla de colaboración si está vacía
         if (
             db.query(TaskComment).count() == 0
@@ -38,7 +39,31 @@ def seed_initial_data(db: Session) -> None:
                     carlos=first_user,
                     lucia=first_user,
                 )
-                db.commit()
+                dirty = True
+
+        # Poblar métricas de Fase 2 en tareas semilla preexistentes si todas están en 0
+        all_items = db.query(TaskItem).order_by(TaskItem.id.asc()).all()
+        if all_items and all(
+            it.estimated_hours == 0.0 and it.budget == 0.0 and it.start_date is None
+            for it in all_items
+        ):
+            default_metrics = [
+                ("2026-10-18", 16.0, 2400.0),
+                ("2026-10-16", 12.0, 1800.0),
+                ("2026-10-20", 24.0, 3600.0),
+                ("2026-10-24", 10.0, 1500.0),
+                ("2026-10-27", 8.0, 950.0),
+                ("2026-10-15", 6.0, 750.0),
+            ]
+            for idx, item in enumerate(all_items):
+                s_date, hrs, bdg = default_metrics[idx % len(default_metrics)]
+                item.start_date = s_date
+                item.estimated_hours = hrs
+                item.budget = bdg
+            dirty = True
+
+        if dirty:
+            db.commit()
         return
 
     # 1. Crear los 4 usuarios de equipo
@@ -185,7 +210,10 @@ def seed_initial_data(db: Session) -> None:
             status_key="in_progress",
             priority="critical",
             assignee_id=ana.id,
+            start_date="2026-10-18",
             due_date="2026-10-25",
+            estimated_hours=16.0,
+            budget=2400.0,
             notes="Soportar OAuth2 real y modo simulador determinístico en local.",
             position=0,
         ),
@@ -196,7 +224,10 @@ def seed_initial_data(db: Session) -> None:
             status_key="done",
             priority="high",
             assignee_id=carlos.id,
+            start_date="2026-10-16",
             due_date="2026-10-22",
+            estimated_hours=12.0,
+            budget=1800.0,
             notes="Incluir los 5 estados iniciales por defecto personalizables.",
             position=1,
         ),
@@ -207,7 +238,10 @@ def seed_initial_data(db: Session) -> None:
             status_key="in_progress",
             priority="high",
             assignee_id=lucia.id,
+            start_date="2026-10-20",
             due_date="2026-10-28",
+            estimated_hours=24.0,
+            budget=3600.0,
             notes="Actualización optimista con rollback ante errores de red.",
             position=0,
         ),
@@ -218,7 +252,10 @@ def seed_initial_data(db: Session) -> None:
             status_key="blocked",
             priority="medium",
             assignee_id=martin.id,
+            start_date="2026-10-24",
             due_date="2026-11-02",
+            estimated_hours=10.0,
+            budget=1500.0,
             notes="Esperando definición de endpoints del proveedor externo.",
             position=1,
         ),
@@ -229,7 +266,10 @@ def seed_initial_data(db: Session) -> None:
             status_key="handed_over",
             priority="low",
             assignee_id=carlos.id,
+            start_date="2026-10-27",
             due_date="2026-11-05",
+            estimated_hours=8.0,
+            budget=950.0,
             notes="Entregado al equipo de infraestructura con scripts listos.",
             position=2,
         ),
@@ -240,7 +280,10 @@ def seed_initial_data(db: Session) -> None:
             status_key="not_started",
             priority="medium",
             assignee_id=ana.id,
+            start_date="2026-10-15",
             due_date="2026-10-20",
+            estimated_hours=6.0,
+            budget=750.0,
             notes="Documentado en AGENTS.md y decisions_log.md.",
             position=0,
         ),
@@ -255,7 +298,10 @@ def seed_initial_data(db: Session) -> None:
             status_key="in_progress",
             priority="high",
             assignee_id=lucia.id,
+            start_date="2026-10-18",
             due_date="2026-10-24",
+            estimated_hours=10.0,
+            budget=1200.0,
             notes="Enfocar propuesta de valor en velocidad y colaboración visual.",
             position=0,
         ),
@@ -266,7 +312,10 @@ def seed_initial_data(db: Session) -> None:
             status_key="not_started",
             priority="critical",
             assignee_id=martin.id,
+            start_date="2026-10-20",
             due_date="2026-10-26",
+            estimated_hours=14.0,
+            budget=2100.0,
             notes="Definir embudo de registro con Google y Microsoft SSO.",
             position=1,
         ),
@@ -277,7 +326,10 @@ def seed_initial_data(db: Session) -> None:
             status_key="in_progress",
             priority="medium",
             assignee_id=carlos.id,
+            start_date="2026-10-21",
             due_date="2026-10-30",
+            estimated_hours=20.0,
+            budget=4500.0,
             notes="Grabación de pantalla con flujo de tablas y Kanban.",
             position=0,
         ),
@@ -288,7 +340,10 @@ def seed_initial_data(db: Session) -> None:
             status_key="blocked",
             priority="high",
             assignee_id=ana.id,
+            start_date="2026-10-22",
             due_date="2026-10-27",
+            estimated_hours=4.0,
+            budget=8000.0,
             notes="Pendiente de revisión financiera trimestral.",
             position=1,
         ),
@@ -299,7 +354,10 @@ def seed_initial_data(db: Session) -> None:
             status_key="handed_over",
             priority="low",
             assignee_id=lucia.id,
+            start_date="2026-10-25",
             due_date="2026-11-01",
+            estimated_hours=12.0,
+            budget=1600.0,
             notes="Carpeta compartida con formatos adaptados.",
             position=2,
         ),
@@ -310,7 +368,10 @@ def seed_initial_data(db: Session) -> None:
             status_key="done",
             priority="medium",
             assignee_id=carlos.id,
+            start_date="2026-10-14",
             due_date="2026-10-19",
+            estimated_hours=8.0,
+            budget=1100.0,
             notes="Aprobado por todo el equipo.",
             position=0,
         ),

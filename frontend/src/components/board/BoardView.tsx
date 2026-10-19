@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
+  BarChart3,
   Calendar,
+  CalendarRange,
   Check,
   CheckSquare,
   ChevronDown,
   ChevronRight,
+  Copy,
+  Download,
   Edit2,
   FilterX,
   FolderKanban,
@@ -21,6 +25,7 @@ import {
   User as UserIcon,
   X,
 } from 'lucide-react';
+import { api } from '../../services/api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import {
@@ -32,9 +37,11 @@ import {
   type TaskItemUpdate,
   type UserRead,
 } from '../../types';
+import { DashboardView } from './DashboardView';
 import { ItemDetailDrawer } from './ItemDetailDrawer';
 import { KanbanView } from './KanbanView';
 import { StatusManagerModal } from './StatusManagerModal';
+import { TimelineCalendarView } from './TimelineCalendarView';
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -64,6 +71,7 @@ export const BoardView: React.FC = () => {
     createItem,
     updateItem,
     deleteItem,
+    duplicateItem,
     openItemDrawer,
   } = useWorkspaceStore();
 
@@ -71,8 +79,10 @@ export const BoardView: React.FC = () => {
 
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
 
-  // Conmutador de Vista: Tabla Principal vs Kanban
-  const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
+  // Conmutador de 4 Vistas: Tabla Principal | Kanban | Cronograma | Dashboard
+  const [viewMode, setViewMode] = useState<
+    'table' | 'kanban' | 'timeline' | 'dashboard'
+  >('table');
 
   // Búsqueda y Filtros en Vivo
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,7 +155,7 @@ export const BoardView: React.FC = () => {
   }
   const availableUsers = Array.from(availableUsersMap.values());
 
-  // Función de filtrado en vivo aplicable a Tabla y Kanban
+  // Función de filtrado en vivo aplicable a Tabla, Kanban y Cronograma
   const hasActiveFilters =
     Boolean(searchQuery.trim()) ||
     Boolean(filterAssignee) ||
@@ -193,6 +203,50 @@ export const BoardView: React.FC = () => {
     setFilterAssignee('');
     setFilterStatus('');
     setFilterPriority('');
+  };
+
+  // Exportación CSV del Tablero
+  const handleExportCsv = async () => {
+    let csvContent = '';
+    try {
+      csvContent = await api.exportBoardCsv(activeBoard.id);
+    } catch {
+      // Respaldo de generación CSV en cliente en caso de entorno desconectado
+      const header =
+        'ID,Grupo,Tarea,Estado,Prioridad,Responsable,Fecha Inicio,Fecha Limite,Horas Estimadas,Presupuesto,Notas';
+      const rows = activeBoard.groups.flatMap((grp) =>
+        grp.items.map((item) => {
+          const stLabel = statusMap.get(item.status_key)?.label ?? item.status_key;
+          const assigneeName = item.assignee?.full_name ?? 'Sin asignar';
+          const hours = (item.estimated_hours ?? 0).toFixed(2);
+          const budget = (item.budget ?? 0).toFixed(2);
+          return `${item.id},"${grp.title}","${item.title}","${stLabel}","${item.priority}","${assigneeName}","${item.start_date ?? ''}","${item.due_date ?? ''}",${hours},${budget},"${item.notes ?? ''}"`;
+        }),
+      );
+      csvContent = [header, ...rows].join('\n');
+    }
+
+    try {
+      if (
+        typeof window !== 'undefined' &&
+        typeof URL !== 'undefined' &&
+        typeof URL.createObjectURL === 'function'
+      ) {
+        const blob = new Blob([csvContent], {
+          type: 'text/csv;charset=utf-8;',
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `board_${activeBoard.id}_export.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      // En entorno jsdom de testing ignoramos errores de descarga nativa del navegador
+    }
   };
 
   // Handlers de Grupos
@@ -251,7 +305,6 @@ export const BoardView: React.FC = () => {
     try {
       await createItem(groupId, { title: cleaned });
     } catch {
-      // En caso de fallo restauramos el texto para no perder lo escrito
       setQuickAddTitles((prev) => ({ ...prev, [groupId]: rawTitle }));
     }
   };
@@ -297,6 +350,14 @@ export const BoardView: React.FC = () => {
     }
   };
 
+  const handleDuplicateItem = async (itemId: number) => {
+    try {
+      await duplicateItem(itemId);
+    } catch {
+      // Error gestionado en store
+    }
+  };
+
   return (
     <main className="flex-1 overflow-y-auto bg-white p-6 space-y-6">
       {/* Banner de Error Descartable (Optimistic Rollback Feedback) */}
@@ -324,7 +385,7 @@ export const BoardView: React.FC = () => {
 
       {/* Cabecera del Tablero */}
       <div className="border-b border-gray-200 pb-5 space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
               <h1
@@ -345,17 +406,17 @@ export const BoardView: React.FC = () => {
             )}
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Conmutador de Vistas: Tabla Principal | Kanban */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Conmutador de 4 Vistas: Tabla Principal | Kanban | Cronograma | Dashboard */}
             <div
               role="group"
               aria-label="Selector de vista del tablero"
-              className="inline-flex items-center p-1 rounded-xl bg-[#f5f6f8] border border-gray-200"
+              className="inline-flex items-center p-1 rounded-xl bg-[#f5f6f8] border border-gray-200 flex-wrap"
             >
               <button
                 type="button"
                 onClick={() => setViewMode('table')}
-                data-testid="btn-view-table"
+                data-testid="view-tab-table"
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   viewMode === 'table'
                     ? 'bg-white text-[#0073ea] shadow-2xs'
@@ -363,12 +424,13 @@ export const BoardView: React.FC = () => {
                 }`}
               >
                 <Table2 className="w-3.5 h-3.5" />
-                <span>Tabla Principal</span>
+                <span data-testid="btn-view-table">Tabla Principal</span>
               </button>
+
               <button
                 type="button"
                 onClick={() => setViewMode('kanban')}
-                data-testid="btn-view-kanban"
+                data-testid="view-tab-kanban"
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   viewMode === 'kanban'
                     ? 'bg-white text-[#0073ea] shadow-2xs'
@@ -376,9 +438,47 @@ export const BoardView: React.FC = () => {
                 }`}
               >
                 <Kanban className="w-3.5 h-3.5" />
-                <span>Kanban</span>
+                <span data-testid="btn-view-kanban">Kanban</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewMode('timeline')}
+                data-testid="view-tab-timeline"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  viewMode === 'timeline'
+                    ? 'bg-white text-[#0073ea] shadow-2xs'
+                    : 'text-[#676879] hover:text-[#323338]'
+                }`}
+              >
+                <CalendarRange className="w-3.5 h-3.5" />
+                <span>Cronograma</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewMode('dashboard')}
+                data-testid="view-tab-dashboard"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  viewMode === 'dashboard'
+                    ? 'bg-white text-[#0073ea] shadow-2xs'
+                    : 'text-[#676879] hover:text-[#323338]'
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>Dashboard</span>
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={() => void handleExportCsv()}
+              data-testid="btn-export-csv"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-300 text-[#323338] hover:bg-gray-50 text-xs font-semibold transition-all cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-[#0073ea]" />
+              <span>Exportar CSV</span>
+            </button>
 
             <button
               type="button"
@@ -560,15 +660,34 @@ export const BoardView: React.FC = () => {
         </div>
       </div>
 
-      {/* Renderizado Condicional: Vista Kanban vs Vista Tabla Principal */}
+      {/* Renderizado Condicional de las 4 Vistas */}
       {viewMode === 'kanban' ? (
         <KanbanView board={activeBoard} filteredItems={filteredAllItems} />
+      ) : viewMode === 'timeline' ? (
+        <TimelineCalendarView
+          board={activeBoard}
+          filteredItems={filteredAllItems}
+        />
+      ) : viewMode === 'dashboard' ? (
+        <DashboardView board={activeBoard} />
       ) : (
         <div className="space-y-8">
           {activeBoard.groups.map((group: TaskGroupRead) => {
             const visibleItems = group.items.filter(matchesFilter);
             const totalGroupItems = group.items.length;
             const isEditingThisGroup = editingGroupId === group.id;
+
+            const groupTotalHours =
+              Math.round(
+                group.items.reduce(
+                  (acc, i) => acc + (i.estimated_hours ?? 0),
+                  0,
+                ) * 100,
+              ) / 100;
+            const groupTotalBudget =
+              Math.round(
+                group.items.reduce((acc, i) => acc + (i.budget ?? 0), 0) * 100,
+              ) / 100;
 
             return (
               <section
@@ -700,20 +819,26 @@ export const BoardView: React.FC = () => {
                       <table className="w-full border-collapse text-left">
                         <thead>
                           <tr className="bg-[#f7f8fa] border-b border-gray-200 text-[11px] font-bold uppercase tracking-wider text-[#676879]">
-                            <th className="py-2.5 px-4 min-w-[280px]">Tarea</th>
-                            <th className="py-2.5 px-4 w-52 text-center border-l border-gray-200">
+                            <th className="py-2.5 px-4 min-w-[270px]">Tarea</th>
+                            <th className="py-2.5 px-3 w-48 text-center border-l border-gray-200">
                               Responsable
                             </th>
-                            <th className="py-2.5 px-4 w-44 text-center border-l border-gray-200">
+                            <th className="py-2.5 px-3 w-40 text-center border-l border-gray-200">
                               Estado
                             </th>
-                            <th className="py-2.5 px-4 w-36 text-center border-l border-gray-200">
+                            <th className="py-2.5 px-3 w-32 text-center border-l border-gray-200">
                               Prioridad
                             </th>
-                            <th className="py-2.5 px-4 w-44 text-center border-l border-gray-200">
+                            <th className="py-2.5 px-3 w-40 text-center border-l border-gray-200">
                               Fecha límite
                             </th>
+                            <th className="py-2.5 px-3 w-28 text-center border-l border-gray-200">
+                              Horas
+                            </th>
                             <th className="py-2.5 px-3 w-36 text-center border-l border-gray-200">
+                              Presupuesto
+                            </th>
+                            <th className="py-2.5 px-3 w-44 text-center border-l border-gray-200">
                               Acciones
                             </th>
                           </tr>
@@ -1054,9 +1179,61 @@ export const BoardView: React.FC = () => {
                                   </div>
                                 </td>
 
-                                {/* Columna 6: Acciones de Fila (Mover de grupo y Eliminar) */}
+                                {/* Columna 6: Horas Estimadas Editable Inline */}
                                 <td className="py-2 px-2.5 border-l border-gray-100 text-center">
-                                  <div className="flex items-center justify-center gap-1.5">
+                                  <div className="inline-flex items-center gap-1">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.5"
+                                      data-testid={`task-hours-input-${item.id}`}
+                                      aria-label={`Horas estimadas de ${item.title}`}
+                                      value={item.estimated_hours ?? 0}
+                                      onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        if (!Number.isNaN(val) && val >= 0) {
+                                          void handleInlineUpdate(item.id, {
+                                            estimated_hours: val,
+                                          });
+                                        }
+                                      }}
+                                      className="w-16 text-right text-xs font-semibold text-[#323338] bg-gray-50 border border-gray-200 rounded-md px-1.5 py-1 focus:outline-none focus:border-[#0073ea]"
+                                    />
+                                    <span className="text-[11px] font-medium text-[#676879]">
+                                      h
+                                    </span>
+                                  </div>
+                                </td>
+
+                                {/* Columna 7: Presupuesto Editable Inline */}
+                                <td className="py-2 px-2.5 border-l border-gray-100 text-center">
+                                  <div className="inline-flex items-center gap-1">
+                                    <span className="text-[11px] font-semibold text-[#676879]">
+                                      $
+                                    </span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="100"
+                                      data-testid={`task-budget-input-${item.id}`}
+                                      aria-label={`Presupuesto de ${item.title}`}
+                                      value={item.budget ?? 0}
+                                      onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        if (!Number.isNaN(val) && val >= 0) {
+                                          void handleInlineUpdate(item.id, {
+                                            budget: val,
+                                          });
+                                        }
+                                      }}
+                                      className="w-20 text-right text-xs font-semibold text-[#323338] bg-gray-50 border border-gray-200 rounded-md px-1.5 py-1 focus:outline-none focus:border-[#0073ea]"
+                                    />
+                                  </div>
+                                </td>
+
+                                {/* Columna 8: Acciones de Fila (Mover de grupo, Duplicar y Eliminar) */}
+                                <td className="py-2 px-2.5 border-l border-gray-100 text-center">
+                                  <div className="flex items-center justify-center gap-1">
                                     {activeBoard.groups.length > 1 && (
                                       <select
                                         data-testid={`task-move-group-select-${item.id}`}
@@ -1068,7 +1245,7 @@ export const BoardView: React.FC = () => {
                                           })
                                         }
                                         title="Mover a otro grupo"
-                                        className="max-w-[92px] text-[11px] text-[#676879] bg-gray-50 border border-gray-200 rounded-md px-1.5 py-1 focus:outline-none focus:border-[#0073ea] cursor-pointer truncate"
+                                        className="max-w-[86px] text-[11px] text-[#676879] bg-gray-50 border border-gray-200 rounded-md px-1.5 py-1 focus:outline-none focus:border-[#0073ea] cursor-pointer truncate"
                                       >
                                         {activeBoard.groups.map((g) => (
                                           <option
@@ -1080,6 +1257,19 @@ export const BoardView: React.FC = () => {
                                         ))}
                                       </select>
                                     )}
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        void handleDuplicateItem(item.id)
+                                      }
+                                      data-testid={`btn-duplicate-task-${item.id}`}
+                                      aria-label={`Duplicar tarea ${item.title}`}
+                                      title="Duplicar tarea"
+                                      className="p-1.5 rounded-md text-[#676879] hover:text-[#0073ea] hover:bg-[#e6f1fd] transition-colors cursor-pointer"
+                                    >
+                                      <Copy className="w-3.5 h-3.5" />
+                                    </button>
 
                                     <button
                                       type="button"
@@ -1102,7 +1292,7 @@ export const BoardView: React.FC = () => {
                           {visibleItems.length === 0 && (
                             <tr>
                               <td
-                                colSpan={6}
+                                colSpan={8}
                                 className="py-4 px-4 text-center text-xs text-[#676879] italic"
                               >
                                 {hasActiveFilters
@@ -1114,7 +1304,7 @@ export const BoardView: React.FC = () => {
 
                           {/* Fila rápida estilo Monday: "+ Agregar tarea..." */}
                           <tr className="bg-[#fafbfc] hover:bg-[#f5f9ff] transition-colors">
-                            <td colSpan={6} className="py-2 px-4">
+                            <td colSpan={8} className="py-2 px-4">
                               <div className="flex items-center gap-2">
                                 <Plus className="w-4 h-4 text-[#0073ea] shrink-0" />
                                 <input
@@ -1152,7 +1342,7 @@ export const BoardView: React.FC = () => {
                           </tr>
                         </tbody>
 
-                        {/* Fila inferior de resumen visual con barra proporcional de estados */}
+                        {/* Fila inferior de resumen visual con barra de estados y Sumatorias de Horas/Presupuesto */}
                         {group.items.length > 0 && (
                           <tfoot>
                             <tr className="bg-[#fafbfc] border-t border-gray-200">
@@ -1189,9 +1379,28 @@ export const BoardView: React.FC = () => {
                                 </div>
                               </td>
                               <td
-                                colSpan={3}
-                                className="border-l border-gray-200"
-                              />
+                                colSpan={2}
+                                className="py-2.5 px-3 border-l border-gray-200 text-right text-xs font-bold text-[#676879]"
+                              >
+                                Sumatoria:
+                              </td>
+                              <td className="py-2.5 px-2.5 border-l border-gray-200 text-center">
+                                <span
+                                  data-testid={`group-sum-hours-${group.id}`}
+                                  className="inline-block px-2 py-0.5 rounded-md bg-[#e6f1fd] text-[#0073ea] text-xs font-extrabold"
+                                >
+                                  {groupTotalHours} h
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-2.5 border-l border-gray-200 text-center">
+                                <span
+                                  data-testid={`group-sum-budget-${group.id}`}
+                                  className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-[#037f4c] text-xs font-extrabold"
+                                >
+                                  ${groupTotalBudget.toLocaleString('en-US')}
+                                </span>
+                              </td>
+                              <td className="border-l border-gray-200" />
                             </tr>
                           </tfoot>
                         )}

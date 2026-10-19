@@ -61,6 +61,14 @@ def validate_iso_date_or_none(value: Optional[str]) -> Optional[str]:
     return cleaned
 
 
+def validate_non_negative_float(value: float, field_label: str) -> float:
+    """Valida que un valor numérico sea mayor o igual a cero."""
+    val = float(value)
+    if val < 0:
+        raise ValueError(f"El campo '{field_label}' no puede ser negativo ({value}).")
+    return round(val, 2)
+
+
 # ---------------------------------------------------------------------------
 # Usuarios y Autenticación OAuth2 / OIDC
 # ---------------------------------------------------------------------------
@@ -247,7 +255,10 @@ class TaskItemCreate(BaseModel):
     status_key: Optional[str] = None
     priority: str = "medium"
     assignee_id: Optional[int] = None
+    start_date: Optional[str] = None
     due_date: Optional[str] = None
+    estimated_hours: float = 0.0
+    budget: float = 0.0
     notes: str = ""
     position: Optional[int] = None
 
@@ -268,21 +279,39 @@ class TaskItemCreate(BaseModel):
     def check_priority(cls, v: str) -> str:
         return validate_priority(v)
 
+    @field_validator("start_date")
+    @classmethod
+    def check_start_date(cls, v: Optional[str]) -> Optional[str]:
+        return validate_iso_date_or_none(v)
+
     @field_validator("due_date")
     @classmethod
     def check_due_date(cls, v: Optional[str]) -> Optional[str]:
         return validate_iso_date_or_none(v)
 
+    @field_validator("estimated_hours")
+    @classmethod
+    def check_estimated_hours(cls, v: float) -> float:
+        return validate_non_negative_float(v, "estimated_hours")
+
+    @field_validator("budget")
+    @classmethod
+    def check_budget(cls, v: float) -> float:
+        return validate_non_negative_float(v, "budget")
+
 
 class TaskItemUpdate(BaseModel):
-    """Payload para edición inline parcial de una tarea (soporta null en assignee_id y due_date)."""
+    """Payload para edición inline parcial de una tarea (soporta null en assignee_id, start_date y due_date)."""
 
     title: Optional[str] = None
     group_id: Optional[int] = None
     status_key: Optional[str] = None
     priority: Optional[str] = None
     assignee_id: Optional[int] = None
+    start_date: Optional[str] = None
     due_date: Optional[str] = None
+    estimated_hours: Optional[float] = None
+    budget: Optional[float] = None
     notes: Optional[str] = None
     position: Optional[int] = None
 
@@ -307,10 +336,29 @@ class TaskItemUpdate(BaseModel):
             return None
         return validate_priority(v)
 
+    @field_validator("start_date")
+    @classmethod
+    def check_start_date(cls, v: Optional[str]) -> Optional[str]:
+        return validate_iso_date_or_none(v)
+
     @field_validator("due_date")
     @classmethod
     def check_due_date(cls, v: Optional[str]) -> Optional[str]:
         return validate_iso_date_or_none(v)
+
+    @field_validator("estimated_hours")
+    @classmethod
+    def check_estimated_hours(cls, v: Optional[float]) -> Optional[float]:
+        if v is None:
+            return None
+        return validate_non_negative_float(v, "estimated_hours")
+
+    @field_validator("budget")
+    @classmethod
+    def check_budget(cls, v: Optional[float]) -> Optional[float]:
+        if v is None:
+            return None
+        return validate_non_negative_float(v, "budget")
 
 
 class TaskItemRead(BaseModel):
@@ -326,7 +374,10 @@ class TaskItemRead(BaseModel):
     priority: str
     assignee_id: Optional[int] = None
     assignee: Optional[UserRead] = None
+    start_date: Optional[str] = None
     due_date: Optional[str] = None
+    estimated_hours: float = 0.0
+    budget: float = 0.0
     notes: str
     position: int
     comments_count: int = 0
@@ -435,6 +486,69 @@ class TaskGroupRead(BaseModel):
     position: int
     collapsed: bool
     items: list[TaskItemRead] = []
+
+
+# ---------------------------------------------------------------------------
+# Analítica Ejecutiva de Tablero (Fase 2)
+# ---------------------------------------------------------------------------
+
+
+class StatusBreakdownItem(BaseModel):
+    """Distribución de tareas por estado del tablero."""
+
+    key: str
+    label: str
+    color: str
+    count: int
+    percentage: float
+
+
+class PriorityBreakdownItem(BaseModel):
+    """Distribución de tareas por nivel de prioridad."""
+
+    priority: str
+    count: int
+
+
+class AssigneeWorkloadItem(BaseModel):
+    """Carga de trabajo, esfuerzo y presupuesto asignado por miembro del equipo."""
+
+    user_id: Optional[int] = None
+    full_name: str
+    color: str
+    total_items: int
+    completed_items: int
+    estimated_hours: float
+    budget: float
+
+
+class GroupMetricsItem(BaseModel):
+    """Métricas agregadas por grupo dentro del tablero."""
+
+    group_id: int
+    title: str
+    color: str
+    total_items: int
+    completed_items: int
+    total_estimated_hours: float
+    total_budget: float
+
+
+class BoardAnalyticsRead(BaseModel):
+    """KPIs ejecutivos y desgloses analíticos de un tablero."""
+
+    board_id: int
+    total_items: int
+    completed_items: int
+    completion_rate: float
+    overdue_items: int
+    unassigned_items: int
+    total_estimated_hours: float
+    total_budget: float
+    by_status: list[StatusBreakdownItem] = []
+    by_priority: list[PriorityBreakdownItem] = []
+    by_assignee: list[AssigneeWorkloadItem] = []
+    by_group: list[GroupMetricsItem] = []
 
 
 # ---------------------------------------------------------------------------
@@ -550,4 +664,5 @@ class WorkspaceRead(BaseModel):
     owner_id: Optional[int] = None
     created_at: datetime
     boards: list[BoardSummaryRead] = []
+
 

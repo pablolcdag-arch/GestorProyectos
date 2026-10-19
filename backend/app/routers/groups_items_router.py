@@ -14,6 +14,7 @@ from app.models import (
     Board,
     BoardStatusConfig,
     TaskActivityLog,
+    TaskChecklistItem,
     TaskGroup,
     TaskItem,
     User,
@@ -218,7 +219,10 @@ def create_task_item(
         status_key=resolved_status_key,
         priority=payload.priority,
         assignee_id=payload.assignee_id,
+        start_date=payload.start_date,
         due_date=payload.due_date,
+        estimated_hours=payload.estimated_hours,
+        budget=payload.budget,
         notes=payload.notes,
         position=next_position,
     )
@@ -359,6 +363,23 @@ def update_task_item(
                     )
                 )
 
+    if "start_date" in fields_set:
+        if payload.start_date != item.start_date:
+            item.start_date = payload.start_date
+            desc = (
+                "Eliminó la fecha de inicio"
+                if payload.start_date is None
+                else f"Definió la fecha de inicio para {payload.start_date}"
+            )
+            db.add(
+                TaskActivityLog(
+                    item_id=item.id,
+                    user_id=current_user.id,
+                    action="start_date_changed",
+                    description=desc,
+                )
+            )
+
     if "due_date" in fields_set:
         if payload.due_date != item.due_date:
             item.due_date = payload.due_date
@@ -376,6 +397,40 @@ def update_task_item(
                 )
             )
 
+    if "estimated_hours" in fields_set:
+        if payload.estimated_hours is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Las horas estimadas no pueden ser nulas.",
+            )
+        if payload.estimated_hours != item.estimated_hours:
+            item.estimated_hours = payload.estimated_hours
+            db.add(
+                TaskActivityLog(
+                    item_id=item.id,
+                    user_id=current_user.id,
+                    action="hours_changed",
+                    description=f"Actualizó las horas estimadas a {item.estimated_hours:g} h",
+                )
+            )
+
+    if "budget" in fields_set:
+        if payload.budget is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El presupuesto no puede ser nulo.",
+            )
+        if payload.budget != item.budget:
+            item.budget = payload.budget
+            db.add(
+                TaskActivityLog(
+                    item_id=item.id,
+                    user_id=current_user.id,
+                    action="budget_changed",
+                    description=f"Actualizó el presupuesto a ${item.budget:,.2f}",
+                )
+            )
+
     if "notes" in fields_set:
         item.notes = payload.notes if payload.notes is not None else ""
 
@@ -386,6 +441,61 @@ def update_task_item(
     db.commit()
     db.refresh(item)
     return item
+
+
+@router.post(
+    "/items/{item_id}/duplicate",
+    response_model=TaskItemRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def duplicate_task_item(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TaskItem:
+    """Clona una tarea dentro de su mismo grupo incluyendo su checklist reiniciado."""
+    source = _get_item_or_404(db, item_id)
+    group = _get_group_or_404(db, source.group_id)
+    next_position = max((it.position for it in group.items), default=-1) + 1
+
+    duplicated = TaskItem(
+        group_id=source.group_id,
+        board_id=source.board_id,
+        title=f"{source.title} (Copia)",
+        status_key=source.status_key,
+        priority=source.priority,
+        assignee_id=source.assignee_id,
+        start_date=source.start_date,
+        due_date=source.due_date,
+        estimated_hours=source.estimated_hours,
+        budget=source.budget,
+        notes=source.notes,
+        position=next_position,
+    )
+    db.add(duplicated)
+    db.flush()
+
+    for chk in source.checklist_items:
+        db.add(
+            TaskChecklistItem(
+                item_id=duplicated.id,
+                title=chk.title,
+                is_completed=False,
+                position=chk.position,
+            )
+        )
+
+    db.add(
+        TaskActivityLog(
+            item_id=duplicated.id,
+            user_id=current_user.id,
+            action="item_duplicated",
+            description=f"Tarea duplicada a partir de '{source.title}'",
+        )
+    )
+    db.commit()
+    db.refresh(duplicated)
+    return duplicated
 
 
 @router.delete("/items/{item_id}")
@@ -399,4 +509,5 @@ def delete_task_item(
     db.delete(item)
     db.commit()
     return {"deleted": True, "id": item_id}
+
 

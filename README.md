@@ -21,7 +21,7 @@ GestorProyectos/
 
 ---
 
-## ✨ Capacidades del MVP (Fase 1 Completada)
+## ✨ Capacidades del Sistema (Fase 1 y Fase 2 Completadas)
 
 1. **Autenticación SSO con Google y Microsoft (OAuth2 / OIDC + JWT):**
    - Soporte dual para credenciales reales (`GOOGLE_CLIENT_ID`, `MICROSOFT_CLIENT_ID`) y modo simulador de desarrollo (`AUTH_DEV_MODE=true`) con cambio rápido de usuario.
@@ -29,10 +29,16 @@ GestorProyectos/
    - Navegación jerárquica con Sidebar colapsable estilo Monday Work OS y CRUD completo.
 3. **Estados Personalizables por Tablero:**
    - 5 estados iniciales por defecto (`Listo` `#00c875`, `En Proceso` `#fdab3d`, `Bloqueado` `#e2445c`, `Traspasado` `#a25ddc`, `Sin Empezar` `#c4c4c4`) más creación/edición/eliminación de estados personalizados por tablero.
-4. **Vista Tabla Principal Interactiva (Main Table) y Vista Kanban con Drag & Drop:**
-   - Grupos desplegables, edición inline con 1 clic (Título, Notas, Responsable, Estado, Prioridad, Fecha límite con alerta de vencimiento), Optimistic Updates con rollback automático, búsqueda/filtros en vivo y tarjetas Kanban arrastrables entre columnas de estado.
-5. **Panel Lateral de Colaboración por Tarea (`ItemDetailDrawer`):**
-   - Checklist interno con barra de progreso, comentarios del equipo e historial automático de actividad.
+4. **Vista Tabla Principal Interactiva (Main Table):**
+   - Grupos desplegables, edición inline con 1 clic (Título, Notas, Responsable, Estado, Prioridad, Fecha límite con semáforo de vencimiento, Horas estimadas y Presupuesto $), sumatorias automáticas por grupo en el pie de tabla, duplicación rápida de tareas y exportación a CSV.
+5. **Vista Kanban con Drag & Drop:**
+   - Columnas automáticas por estado con arrastre fluido de tarjetas, recálculo reactivo y alta rápida por columna.
+6. **Vista Cronograma / Calendario (Timeline):**
+   - Visualización de rango de fechas (`start_date` → `due_date`), duración en días y edición inline de fechas.
+7. **Vista Dashboard Ejecutivo:**
+   - Tarjetas KPI en vivo (Avance %, Tareas vencidas, Total Horas, Presupuesto Total) y gráficos de distribución por Estado, Prioridad, Carga por Responsable y Resumen Financiero por Grupo.
+8. **Panel Lateral de Colaboración por Tarea (`ItemDetailDrawer`):**
+   - Checklist interno con barra de progreso, comentarios del equipo e historial automático de actividad auditado.
 
 ---
 
@@ -56,11 +62,11 @@ Luego abrí **`http://localhost:5173`** en el navegador.
 
 ## 🧪 Ejecutar Suites de Pruebas Automatizadas
 
-- **Backend (19 tests en `pytest`):**
+- **Backend (24 tests en `pytest`):**
   ```bash
   cd backend && ./venv/bin/pytest -v
   ```
-- **Frontend (15 tests en `Vitest` + Build TypeScript):**
+- **Frontend (19 tests en `Vitest` + Build TypeScript):**
   ```bash
   cd frontend && npm test -- --run && npm run build
   ```
