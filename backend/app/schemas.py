@@ -9,6 +9,8 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, field_validator
 
 HEX_COLOR_PATTERN = re.compile(r"^#[0-9a-fA-F]{6}$")
+ISO_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+VALID_PRIORITIES = {"critical", "high", "medium", "low"}
 
 
 def validate_non_empty_text(value: str, field_label: str) -> str:
@@ -27,6 +29,36 @@ def validate_hex_color(value: str) -> str:
             f"El color '{value}' es inválido. Debe tener formato hexadecimal #RRGGBB."
         )
     return cleaned.lower()
+
+
+def validate_priority(value: str) -> str:
+    """Valida que la prioridad esté dentro de los valores permitidos."""
+    cleaned = value.strip().lower()
+    if cleaned not in VALID_PRIORITIES:
+        raise ValueError(
+            f"Prioridad '{value}' inválida. Valores permitidos: {sorted(VALID_PRIORITIES)}."
+        )
+    return cleaned
+
+
+def validate_iso_date_or_none(value: Optional[str]) -> Optional[str]:
+    """Normaliza cadenas vacías a None y valida formato calendario YYYY-MM-DD."""
+    if value is None:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    if not ISO_DATE_PATTERN.match(cleaned):
+        raise ValueError(
+            f"La fecha '{value}' es inválida. Debe tener formato ISO YYYY-MM-DD."
+        )
+    try:
+        datetime.strptime(cleaned, "%Y-%m-%d")
+    except ValueError as exc:
+        raise ValueError(
+            f"La fecha '{value}' no es una fecha de calendario válida (YYYY-MM-DD)."
+        ) from exc
+    return cleaned
 
 
 # ---------------------------------------------------------------------------
@@ -164,6 +196,121 @@ class BoardStatusRead(BaseModel):
 # ---------------------------------------------------------------------------
 # Grupos y Tareas (TaskGroup & TaskItem)
 # ---------------------------------------------------------------------------
+
+
+class TaskGroupCreate(BaseModel):
+    """Payload para crear un nuevo grupo de tareas dentro de un tablero."""
+
+    title: str
+    color: str = "#579bfc"
+    position: Optional[int] = None
+    collapsed: bool = False
+
+    @field_validator("title")
+    @classmethod
+    def check_title(cls, v: str) -> str:
+        return validate_non_empty_text(v, "title")
+
+    @field_validator("color")
+    @classmethod
+    def check_color(cls, v: str) -> str:
+        return validate_hex_color(v)
+
+
+class TaskGroupUpdate(BaseModel):
+    """Payload para actualizar título, color, posición o estado colapsado de un grupo."""
+
+    title: Optional[str] = None
+    color: Optional[str] = None
+    position: Optional[int] = None
+    collapsed: Optional[bool] = None
+
+    @field_validator("title")
+    @classmethod
+    def check_title(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        return validate_non_empty_text(v, "title")
+
+    @field_validator("color")
+    @classmethod
+    def check_color(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        return validate_hex_color(v)
+
+
+class TaskItemCreate(BaseModel):
+    """Payload para crear una nueva tarea dentro de un grupo."""
+
+    title: str
+    status_key: Optional[str] = None
+    priority: str = "medium"
+    assignee_id: Optional[int] = None
+    due_date: Optional[str] = None
+    notes: str = ""
+    position: Optional[int] = None
+
+    @field_validator("title")
+    @classmethod
+    def check_title(cls, v: str) -> str:
+        return validate_non_empty_text(v, "title")
+
+    @field_validator("status_key")
+    @classmethod
+    def check_status_key(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        return validate_non_empty_text(v, "status_key")
+
+    @field_validator("priority")
+    @classmethod
+    def check_priority(cls, v: str) -> str:
+        return validate_priority(v)
+
+    @field_validator("due_date")
+    @classmethod
+    def check_due_date(cls, v: Optional[str]) -> Optional[str]:
+        return validate_iso_date_or_none(v)
+
+
+class TaskItemUpdate(BaseModel):
+    """Payload para edición inline parcial de una tarea (soporta null en assignee_id y due_date)."""
+
+    title: Optional[str] = None
+    group_id: Optional[int] = None
+    status_key: Optional[str] = None
+    priority: Optional[str] = None
+    assignee_id: Optional[int] = None
+    due_date: Optional[str] = None
+    notes: Optional[str] = None
+    position: Optional[int] = None
+
+    @field_validator("title")
+    @classmethod
+    def check_title(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        return validate_non_empty_text(v, "title")
+
+    @field_validator("status_key")
+    @classmethod
+    def check_status_key(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        return validate_non_empty_text(v, "status_key")
+
+    @field_validator("priority")
+    @classmethod
+    def check_priority(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        return validate_priority(v)
+
+    @field_validator("due_date")
+    @classmethod
+    def check_due_date(cls, v: Optional[str]) -> Optional[str]:
+        return validate_iso_date_or_none(v)
 
 
 class TaskItemRead(BaseModel):

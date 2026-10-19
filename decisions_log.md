@@ -52,3 +52,12 @@
 - **Razón:** Auditoría del Verificador de Frontend con veredicto **APROBADO ✅**, 7/7 tests automatizados en `Vitest` pasando al 100% y build de producción (`tsc -b && vite build`) limpio con 0 errores.
 - **Impacto:** Sprint 1 completado de punta a punta (Backend + Frontend). Se inicia el **Sprint 2 (Motor CRUD e Interactividad Inline de Grupos e Items)**.
 
+---
+
+## [19/10/2026] — Cierre y Aprobación del Sprint 2A (Backend: CRUD de Grupos, Items y Edición Inline de Celdas)
+- **Decisión:**
+  1. Se aprueba e integra en `backend/app/routers/groups_items_router.py` y `backend/app/schemas.py` el conjunto completo de endpoints CRUD para Grupos (`POST /api/boards/{board_id}/groups`, `PATCH /api/groups/{group_id}`, `DELETE /api/groups/{group_id}`) e Items (`POST /api/groups/{group_id}/items`, `PATCH /api/items/{item_id}`, `DELETE /api/items/{item_id}`).
+  2. Se adopta el uso de `payload.model_fields_set` en Pydantic v2 dentro de `PATCH /api/items/{item_id}` para soportar edición inline parcial por celda y diferenciar campos omitidos vs. desasignación explícita (`"assignee_id": null`) o limpieza de fecha límite (`"due_date": null` / `""`).
+- **Razón:** Auditoría del Verificador de Backend con veredicto **APROBADO ✅** y 15/15 tests automatizados en `pytest` pasando al 100% (0 fallos).
+- **Impacto:** Backend del Sprint 2 completado. Se habilita el **Sprint 2B (Frontend: Vista Tabla Principal Interactiva con Edición Inline y Optimistic Updates)**.
+
