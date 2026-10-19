@@ -666,3 +666,89 @@ class WorkspaceRead(BaseModel):
     boards: list[BoardSummaryRead] = []
 
 
+# ============================================================================
+# Esquemas para Automatizaciones de Tablero (Fase 3)
+# ============================================================================
+
+VALID_AUTOMATION_RULES: set[str] = {
+    "when_checklist_complete_set_status",
+    "when_status_done_complete_checklist",
+    "when_status_blocked_log_alert",
+}
+
+
+class BoardAutomationCreate(BaseModel):
+    """Payload para crear o configurar una regla de automatización en un tablero."""
+
+    rule_type: str
+    target_status_key: Optional[str] = "done"
+    is_active: bool = True
+
+    @field_validator("rule_type")
+    @classmethod
+    def check_rule_type(cls, v: str) -> str:
+        rule = validate_non_empty_text(v, "rule_type")
+        if rule not in VALID_AUTOMATION_RULES:
+            raise ValueError(
+                f"Regla de automatización '{rule}' no válida. Opciones permitidas: {sorted(VALID_AUTOMATION_RULES)}"
+            )
+        return rule
+
+
+class BoardAutomationUpdate(BaseModel):
+    """Payload para activar, desactivar o modificar una regla de automatización."""
+
+    is_active: Optional[bool] = None
+    target_status_key: Optional[str] = None
+
+
+class BoardAutomationRead(BaseModel):
+    """Representación de una regla de automatización configurada en un tablero."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    board_id: int
+    rule_type: str
+    target_status_key: Optional[str] = "done"
+    is_active: bool
+    created_at: datetime
+
+
+# ============================================================================
+# Esquemas para la Vista Global 'Mi Trabajo' (Fase 3)
+# ============================================================================
+
+class MyWorkItemRead(TaskItemRead):
+    """Tarea enriquecida con metadatos contextuales para la vista global Mi Trabajo."""
+
+    board_name: str
+    workspace_id: int
+    workspace_name: str
+    group_title: str
+    group_color: str
+
+
+class MyWorkSummary(BaseModel):
+    """Resumen cuantitativo de tareas asignadas al usuario."""
+
+    total_assigned: int
+    overdue_count: int
+    today_count: int
+    this_week_count: int
+    upcoming_count: int
+    completed_count: int
+
+
+class MyWorkResponse(BaseModel):
+    """Respuesta estructurada para la vista global Mi Trabajo."""
+
+    summary: MyWorkSummary
+    overdue: list[MyWorkItemRead]
+    today: list[MyWorkItemRead]
+    this_week: list[MyWorkItemRead]
+    upcoming_or_no_date: list[MyWorkItemRead]
+    completed: list[MyWorkItemRead]
+
+
+

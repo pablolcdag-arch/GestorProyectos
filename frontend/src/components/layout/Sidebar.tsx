@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Briefcase,
   Check,
+  CheckSquare,
   Edit2,
   FolderKanban,
   Plus,
@@ -31,6 +32,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
     createBoard,
     updateBoard,
     deleteBoard,
+    currentViewMode,
+    setViewMode,
+    myWorkData,
+    loadMyWork,
   } = useWorkspaceStore();
 
   // Estados para crear Workspace
@@ -60,6 +65,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
         aria-label="Barra lateral colapsada"
         className="w-16 bg-[#f7f8fa] border-r border-gray-200 flex flex-col items-center py-4 gap-3 shrink-0"
       >
+        {/* Acceso directo a Mi Trabajo en modo colapsado */}
+        <button
+          type="button"
+          onClick={() => {
+            setViewMode('my-work');
+            void loadMyWork();
+          }}
+          data-testid="nav-my-work"
+          title="Mi Trabajo"
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform cursor-pointer relative ${
+            currentViewMode === 'my-work'
+              ? 'bg-[#0073ea] text-white ring-2 ring-offset-2 ring-[#0073ea] scale-105'
+              : 'bg-white border border-gray-200 text-[#323338] hover:bg-gray-100'
+          }`}
+        >
+          <CheckSquare className="w-5 h-5" />
+          {myWorkData?.summary && myWorkData.summary.total_assigned > 0 ? (
+            <span className="absolute -top-1 -right-1 bg-[#e2445c] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+              {myWorkData.summary.total_assigned}
+            </span>
+          ) : null}
+        </button>
+
+        <div className="w-8 h-px bg-gray-200 my-1" />
+
         {workspaces.map((ws) => {
           const isSelected = ws.id === activeWorkspaceId;
           return (
@@ -152,6 +182,40 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
       aria-label="Navegación de Espacios y Tableros"
       className="w-72 bg-[#f7f8fa] border-r border-gray-200 flex flex-col shrink-0 select-none"
     >
+      {/* Botón destacado: Mi Trabajo */}
+      <div className="p-3 border-b border-gray-200">
+        <button
+          type="button"
+          onClick={() => {
+            setViewMode('my-work');
+            void loadMyWork();
+          }}
+          data-testid="nav-my-work"
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            currentViewMode === 'my-work'
+              ? 'bg-[#0073ea] text-white shadow-xs'
+              : 'text-[#323338] bg-white hover:bg-gray-100 border border-gray-200'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <CheckSquare className="w-4 h-4 text-inherit" />
+            <span>Mi Trabajo</span>
+          </div>
+          {myWorkData?.summary && myWorkData.summary.total_assigned > 0 ? (
+            <span
+              data-testid="my-work-badge"
+              className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+                currentViewMode === 'my-work'
+                  ? 'bg-white text-[#0073ea]'
+                  : 'bg-[#f0f7ff] text-[#0073ea] border border-[#cce5ff]'
+              }`}
+            >
+              {myWorkData.summary.total_assigned}
+            </span>
+          ) : null}
+        </button>
+      </div>
+
       {/* Sección: Selector de Espacio de Trabajo */}
       <div className="p-4 border-b border-gray-200 space-y-3">
         <div className="flex items-center justify-between">

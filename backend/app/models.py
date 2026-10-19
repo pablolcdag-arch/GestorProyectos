@@ -108,6 +108,12 @@ class Board(Base):
         cascade="all, delete-orphan",
         order_by="TaskItem.position, TaskItem.id",
     )
+    automations: Mapped[list["BoardAutomation"]] = relationship(
+        "BoardAutomation",
+        back_populates="board",
+        cascade="all, delete-orphan",
+        order_by="BoardAutomation.id",
+    )
 
 
 class BoardStatusConfig(Base):
@@ -125,6 +131,30 @@ class BoardStatusConfig(Base):
     position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     board: Mapped["Board"] = relationship("Board", back_populates="statuses")
+
+
+class BoardAutomation(Base):
+    """Regla de automatización configurable dentro de un tablero."""
+
+    __tablename__ = "board_automations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    board_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("boards.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    rule_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    target_status_key: Mapped[Optional[str]] = mapped_column(
+        String(60), nullable=True, default="done"
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+    board: Mapped["Board"] = relationship("Board", back_populates="automations")
 
 
 class TaskGroup(Base):

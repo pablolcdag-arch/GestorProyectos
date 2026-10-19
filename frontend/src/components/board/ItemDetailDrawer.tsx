@@ -236,7 +236,7 @@ export const ItemDetailDrawer: React.FC = () => {
           >
             <Activity className="w-3.5 h-3.5" />
             <span>
-              Actividad ({activeItemDetail?.activities.length ?? 0})
+              Actividad ({activeItemDetail?.activities?.length ?? 0})
             </span>
           </button>
         </div>

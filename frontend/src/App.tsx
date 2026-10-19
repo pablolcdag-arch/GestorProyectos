@@ -3,12 +3,13 @@ import { LoginScreen } from './components/auth/LoginScreen';
 import { BoardView } from './components/board/BoardView';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopHeader } from './components/layout/TopHeader';
+import { MyWorkView } from './components/mywork/MyWorkView';
 import { useAuthStore } from './store/useAuthStore';
 import { useWorkspaceStore } from './store/useWorkspaceStore';
 
 export const App: React.FC = () => {
   const { user, restoreSession } = useAuthStore();
-  const { loadWorkspaces } = useWorkspaceStore();
+  const { loadWorkspaces, currentViewMode } = useWorkspaceStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export const App: React.FC = () => {
       />
       <div className="flex-1 flex overflow-hidden">
         <Sidebar collapsed={sidebarCollapsed} />
-        <BoardView />
+        {currentViewMode === 'my-work' ? <MyWorkView /> : <BoardView />}
       </div>
     </div>
   );

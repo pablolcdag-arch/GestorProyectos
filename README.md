@@ -39,34 +39,47 @@ GestorProyectos/
    - Tarjetas KPI en vivo (Avance %, Tareas vencidas, Total Horas, Presupuesto Total) y gráficos de distribución por Estado, Prioridad, Carga por Responsable y Resumen Financiero por Grupo.
 8. **Panel Lateral de Colaboración por Tarea (`ItemDetailDrawer`):**
    - Checklist interno con barra de progreso, comentarios del equipo e historial automático de actividad auditado.
+9. **Vista Global "Mi Trabajo" (`My Work`):**
+   - Consolidación transversal de todas las tareas asignadas al usuario logueado en todos los tableros y espacios, organizadas en cubetas temporales (*Vencidas*, *Hoy*, *Esta Semana*, *Próximas* y *Completadas*) con edición inline directa.
+10. **Motor de Automatizaciones estilo Monday.com:**
+   - Reglas reactivas configurables por tablero (*Al completar el 100% del checklist → Pasar a Listo*, *Al pasar a Listo → Completar checklist*, *Al marcar como Bloqueado → Generar alerta prioritaria en el historial*).
+11. **Despliegue Contenedorizado con Docker:**
+   - Multi-stage builds optimizados para Frontend (Nginx) y Backend (Python 3.11-slim) orquestados con PostgreSQL 16 vía `docker-compose.yml`.
 
 ---
 
-## 🚦 Cómo Ejecutar el Proyecto Localmente
+## 🚦 Cómo Ejecutar el Proyecto
 
-### 1. Levantar el Backend (FastAPI en puerto `8000`)
-```bash
-cd backend
-./venv/bin/uvicorn app.main:app --reload --port 8000
-```
+### Opción A: Desarrollo Local
 
-### 2. Levantar el Frontend (Vite en puerto `5173`)
-En otra terminal:
+1. **Backend (FastAPI en puerto `8000`):**
+   ```bash
+   cd backend
+   ./venv/bin/uvicorn app.main:app --reload --port 8000
+   ```
+
+2. **Frontend (Vite en puerto `5173`):**
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+   Abrí **`http://localhost:5173`** en el navegador.
+
+### Opción B: Producción con Docker Compose (PostgreSQL + FastAPI + Nginx)
 ```bash
-cd frontend
-npm run dev
+docker compose up --build
 ```
-Luego abrí **`http://localhost:5173`** en el navegador.
+Abrí **`http://localhost`** (o `http://localhost:5173`) en el navegador.
 
 ---
 
-## 🧪 Ejecutar Suites de Pruebas Automatizadas
+## 🧪 Ejecutar Suites de Pruebas Automatizadas (50 tests en verde)
 
-- **Backend (24 tests en `pytest`):**
+- **Backend (29 tests en `pytest`):**
   ```bash
   cd backend && ./venv/bin/pytest -v
   ```
-- **Frontend (19 tests en `Vitest` + Build TypeScript):**
+- **Frontend (21 tests en `Vitest` + Compilación TypeScript):**
   ```bash
   cd frontend && npm test -- --run && npm run build
   ```

@@ -19,6 +19,7 @@ from app.models import (
     TaskItem,
     User,
 )
+from app.routers.automations_router import run_board_automations
 from app.schemas import (
     TaskGroupCreate,
     TaskGroupRead,
@@ -319,6 +320,12 @@ def update_task_item(
                     action="status_changed",
                     description=f"Cambió el estado a '{status_label}'",
                 )
+            )
+            run_board_automations(
+                db=db,
+                item=item,
+                trigger_event="status_changed",
+                current_user_id=current_user.id,
             )
 
     if "priority" in fields_set:

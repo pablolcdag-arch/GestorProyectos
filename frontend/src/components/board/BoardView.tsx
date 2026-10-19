@@ -24,6 +24,7 @@ import {
   Trash2,
   User as UserIcon,
   X,
+  Zap,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -37,6 +38,7 @@ import {
   type TaskItemUpdate,
   type UserRead,
 } from '../../types';
+import { AutomationsModal } from './AutomationsModal';
 import { DashboardView } from './DashboardView';
 import { ItemDetailDrawer } from './ItemDetailDrawer';
 import { KanbanView } from './KanbanView';
@@ -78,6 +80,7 @@ export const BoardView: React.FC = () => {
   const { users, teamUsers } = useAuthStore();
 
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [isAutomationsModalOpen, setIsAutomationsModalOpen] = useState(false);
 
   // Conmutador de 4 Vistas: Tabla Principal | Kanban | Cronograma | Dashboard
   const [viewMode, setViewMode] = useState<
@@ -488,6 +491,16 @@ export const BoardView: React.FC = () => {
             >
               <Plus className="w-4 h-4" />
               <span>+ Nuevo Grupo</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsAutomationsModalOpen(true)}
+              data-testid="btn-open-automations-modal"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-amber-300 bg-amber-50/70 hover:bg-amber-100 text-amber-900 text-xs font-semibold transition-all cursor-pointer"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
+              <span>Automatizaciones</span>
             </button>
 
             <button
@@ -1420,6 +1433,14 @@ export const BoardView: React.FC = () => {
         statuses={activeBoard.statuses}
         isOpen={isStatusModalOpen}
         onClose={() => setIsStatusModalOpen(false)}
+      />
+
+      {/* Modal Automatizaciones de Tablero */}
+      <AutomationsModal
+        boardId={activeBoard.id}
+        boardName={activeBoard.name}
+        isOpen={isAutomationsModalOpen}
+        onClose={() => setIsAutomationsModalOpen(false)}
       />
 
       {/* Panel Lateral de Detalle y Colaboración por Tarea */}

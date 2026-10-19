@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.models import (
     DEFAULT_BOARD_STATUSES,
     Board,
+    BoardAutomation,
     BoardStatusConfig,
     TaskActivityLog,
     TaskChecklistItem,
@@ -16,6 +17,24 @@ from app.models import (
     User,
     Workspace,
 )
+
+DEFAULT_BOARD_AUTOMATIONS: list[dict[str, str | bool]] = [
+    {
+        "rule_type": "when_checklist_complete_set_status",
+        "target_status_key": "done",
+        "is_active": True,
+    },
+    {
+        "rule_type": "when_status_done_complete_checklist",
+        "target_status_key": "done",
+        "is_active": True,
+    },
+    {
+        "rule_type": "when_status_blocked_log_alert",
+        "target_status_key": "done",
+        "is_active": True,
+    },
+]
 
 
 def seed_initial_data(db: Session) -> None:
@@ -61,6 +80,21 @@ def seed_initial_data(db: Session) -> None:
                 item.estimated_hours = hrs
                 item.budget = bdg
             dirty = True
+
+        # Asegurar reglas de automatización por defecto en el primer tablero si no existen
+        if db.query(BoardAutomation).count() == 0:
+            first_board = db.query(Board).order_by(Board.id.asc()).first()
+            if first_board:
+                for auto in DEFAULT_BOARD_AUTOMATIONS:
+                    db.add(
+                        BoardAutomation(
+                            board_id=first_board.id,
+                            rule_type=str(auto["rule_type"]),
+                            target_status_key=str(auto["target_status_key"]),
+                            is_active=bool(auto["is_active"]),
+                        )
+                    )
+                dirty = True
 
         if dirty:
             db.commit()
@@ -151,6 +185,17 @@ def seed_initial_data(db: Session) -> None:
                     position=int(st["position"]),
                 )
             )
+
+    # Crear las 3 reglas de automatización por defecto en el Tablero Roadmap
+    for auto in DEFAULT_BOARD_AUTOMATIONS:
+        db.add(
+            BoardAutomation(
+                board_id=board_roadmap.id,
+                rule_type=str(auto["rule_type"]),
+                target_status_key=str(auto["target_status_key"]),
+                is_active=bool(auto["is_active"]),
+            )
+        )
 
     # Crear los 3 grupos en el Tablero 1 (Roadmap de Producto Q4)
     g1_week = TaskGroup(

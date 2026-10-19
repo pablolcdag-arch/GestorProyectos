@@ -10,12 +10,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import app.database as db_module
 from app.config import settings
-from app.database import Base, ensure_phase2_schema
+from app.database import Base, ensure_schema_migrations
 from app.routers import (
     auth_router,
+    automations_router,
     boards_router,
     groups_items_router,
     item_collaboration_router,
+    my_work_router,
     workspaces_router,
 )
 from app.seed import seed_initial_data
@@ -25,7 +27,7 @@ from app.seed import seed_initial_data
 async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
     """Inicializa tablas, aplica migraciones defensivas y carga datos semilla si la DB está vacía."""
     Base.metadata.create_all(bind=db_module.engine)
-    ensure_phase2_schema(db_module.engine)
+    ensure_schema_migrations(db_module.engine)
     with db_module.SessionLocal() as db:
         seed_initial_data(db)
     yield
@@ -55,6 +57,8 @@ app.include_router(workspaces_router.router)
 app.include_router(boards_router.router)
 app.include_router(groups_items_router.router)
 app.include_router(item_collaboration_router.router)
+app.include_router(automations_router.router)
+app.include_router(my_work_router.router)
 
 
 @app.get("/api/health", tags=["Health"])

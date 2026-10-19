@@ -303,6 +303,52 @@ export interface WorkspaceRead {
   boards: BoardSummaryRead[];
 }
 
+export interface BoardAutomationRead {
+  id: number;
+  board_id: number;
+  rule_type: string;
+  target_status_key: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface BoardAutomationCreate {
+  rule_type: string;
+  target_status_key?: string | null;
+  is_active?: boolean;
+}
+
+export interface BoardAutomationUpdate {
+  is_active?: boolean;
+  target_status_key?: string | null;
+}
+
+export interface MyWorkItemRead extends TaskItemRead {
+  board_name: string;
+  workspace_id: number;
+  workspace_name: string;
+  group_title: string;
+  group_color: string;
+}
+
+export interface MyWorkSummary {
+  total_assigned: number;
+  overdue_count: number;
+  today_count: number;
+  this_week_count: number;
+  upcoming_count: number;
+  completed_count: number;
+}
+
+export interface MyWorkResponse {
+  summary: MyWorkSummary;
+  overdue: MyWorkItemRead[];
+  today: MyWorkItemRead[];
+  this_week: MyWorkItemRead[];
+  upcoming_or_no_date: MyWorkItemRead[];
+  completed: MyWorkItemRead[];
+}
+
 export interface PriorityMeta {
   key: string;
   label: string;

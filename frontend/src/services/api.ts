@@ -1,5 +1,8 @@
 import type {
   BoardAnalyticsRead,
+  BoardAutomationCreate,
+  BoardAutomationRead,
+  BoardAutomationUpdate,
   BoardCreate,
   BoardDetailRead,
   BoardStatusCreate,
@@ -7,6 +10,7 @@ import type {
   BoardStatusUpdate,
   BoardUpdate,
   DeleteBoardStatusResponse,
+  MyWorkResponse,
   OAuthAuthorizeResponse,
   OAuthCallbackRequest,
   OAuthProviderConfig,
@@ -401,6 +405,47 @@ export const api = {
   ): Promise<{ deleted: boolean; id: number }> {
     return request<{ deleted: boolean; id: number }>(
       `/api/checklist/${checklistId}`,
+      {
+        method: 'DELETE',
+      },
+    );
+  },
+
+  // Mi Trabajo (Fase 3)
+  getMyWork(): Promise<MyWorkResponse> {
+    return request<MyWorkResponse>('/api/my-work');
+  },
+
+  // Automatizaciones de Tablero (Fase 3)
+  getBoardAutomations(boardId: number): Promise<BoardAutomationRead[]> {
+    return request<BoardAutomationRead[]>(`/api/boards/${boardId}/automations`);
+  },
+
+  createBoardAutomation(
+    boardId: number,
+    payload: BoardAutomationCreate,
+  ): Promise<BoardAutomationRead> {
+    return request<BoardAutomationRead>(`/api/boards/${boardId}/automations`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateBoardAutomation(
+    automationId: number,
+    payload: BoardAutomationUpdate,
+  ): Promise<BoardAutomationRead> {
+    return request<BoardAutomationRead>(`/api/automations/${automationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteBoardAutomation(
+    automationId: number,
+  ): Promise<{ deleted: boolean; id: number }> {
+    return request<{ deleted: boolean; id: number }>(
+      `/api/automations/${automationId}`,
       {
         method: 'DELETE',
       },

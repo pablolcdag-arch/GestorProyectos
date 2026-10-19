@@ -17,6 +17,7 @@ from app.models import (
     TaskItem,
     User,
 )
+from app.routers.automations_router import run_board_automations
 from app.schemas import (
     TaskChecklistCreate,
     TaskChecklistItemRead,
@@ -183,6 +184,17 @@ def update_checklist_item(
                 description=f"{verb} el ítem del checklist: '{checklist_item.title}'",
             )
         )
+        item = (
+            checklist_item.item
+            or db.query(TaskItem).filter(TaskItem.id == checklist_item.item_id).first()
+        )
+        if item:
+            run_board_automations(
+                db=db,
+                item=item,
+                trigger_event="checklist_updated",
+                current_user_id=current_user.id,
+            )
 
     db.commit()
     db.refresh(checklist_item)

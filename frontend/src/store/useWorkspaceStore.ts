@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { api } from '../services/api';
 import type {
   BoardAnalyticsRead,
+  BoardAutomationRead,
   BoardCreate,
   BoardDetailRead,
   BoardStatusCreate,
@@ -9,6 +10,7 @@ import type {
   BoardStatusUpdate,
   BoardSummaryRead,
   BoardUpdate,
+  MyWorkResponse,
   TaskChecklistItemRead,
   TaskChecklistUpdate,
   TaskCommentRead,
@@ -84,11 +86,26 @@ interface WorkspaceState {
   activeBoard: BoardDetailRead | null;
   activeItemDetail: TaskItemDetailRead | null;
   boardAnalytics: BoardAnalyticsRead | null;
+  currentViewMode: 'board' | 'my-work';
+  myWorkData: MyWorkResponse | null;
+  isLoadingMyWork: boolean;
+  boardAutomations: BoardAutomationRead[];
+  isLoadingAutomations: boolean;
   isLoadingWorkspaces: boolean;
   isLoadingBoard: boolean;
   isLoadingItemDetail: boolean;
   isLoadingAnalytics: boolean;
   error: string | null;
+
+  setViewMode: (mode: 'board' | 'my-work') => void;
+  loadMyWork: () => Promise<MyWorkResponse | null>;
+  loadBoardAutomations: (boardId: number) => Promise<BoardAutomationRead[]>;
+  toggleAutomation: (
+    boardId: number,
+    ruleType: string,
+    currentActive: boolean,
+    existingId?: number,
+  ) => Promise<void>;
 
   loadWorkspaces: () => Promise<void>;
   selectWorkspace: (workspaceId: number) => Promise<void>;
@@ -167,6 +184,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   activeBoard: null,
   activeItemDetail: null,
   boardAnalytics: null,
+  currentViewMode: 'board',
+  myWorkData: null,
+  isLoadingMyWork: false,
+  boardAutomations: [],
+  isLoadingAutomations: false,
   isLoadingWorkspaces: false,
   isLoadingBoard: false,
   isLoadingItemDetail: false,
@@ -230,6 +252,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activeBoardId: firstBoardId,
       activeItemDetail: null,
       boardAnalytics: null,
+      currentViewMode: 'board',
       error: null,
     });
 
@@ -338,6 +361,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activeBoardId: boardId,
       activeItemDetail: null,
       boardAnalytics: null,
+      currentViewMode: 'board',
       isLoadingBoard: true,
       error: null,
     });
@@ -1196,6 +1220,78 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
   },
 
+  setViewMode: (mode: 'board' | 'my-work') => set({ currentViewMode: mode }),
+
+  loadMyWork: async () => {
+    set({ isLoadingMyWork: true, error: null });
+    try {
+      const data = await api.getMyWork();
+      set({ myWorkData: data, isLoadingMyWork: false });
+      return data;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Error al cargar Mi Trabajo.';
+      set({ isLoadingMyWork: false, error: message });
+      return null;
+    }
+  },
+
+  loadBoardAutomations: async (boardId: number) => {
+    set({ isLoadingAutomations: true, error: null });
+    try {
+      const automations = await api.getBoardAutomations(boardId);
+      set({ boardAutomations: automations, isLoadingAutomations: false });
+      return automations;
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Error al cargar las automatizaciones.';
+      set({ isLoadingAutomations: false, error: message });
+      return [];
+    }
+  },
+
+  toggleAutomation: async (
+    boardId: number,
+    ruleType: string,
+    currentActive: boolean,
+    existingId?: number,
+  ) => {
+    set({ error: null });
+    try {
+      let updatedRule: BoardAutomationRead;
+      if (existingId !== undefined && existingId > 0) {
+        updatedRule = await api.updateBoardAutomation(existingId, {
+          is_active: !currentActive,
+        });
+      } else {
+        updatedRule = await api.createBoardAutomation(boardId, {
+          rule_type: ruleType,
+          is_active: true,
+        });
+      }
+      const prev = get().boardAutomations;
+      const foundIdx = prev.findIndex(
+        (r) => r.id === updatedRule.id || r.rule_type === ruleType,
+      );
+      if (foundIdx >= 0) {
+        const next = [...prev];
+        next[foundIdx] = updatedRule;
+        set({ boardAutomations: next });
+      } else {
+        set({ boardAutomations: [...prev, updatedRule] });
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'No se pudo actualizar la automatización.';
+      set({ error: message });
+      throw err;
+    }
+  },
+
   toggleGroupCollapse: (groupId: number) => {
     const currentBoard = get().activeBoard;
     if (!currentBoard) return;
@@ -1219,6 +1315,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activeBoard: null,
       activeItemDetail: null,
       boardAnalytics: null,
+      currentViewMode: 'board',
+      myWorkData: null,
+      isLoadingMyWork: false,
+      boardAutomations: [],
+      isLoadingAutomations: false,
       isLoadingWorkspaces: false,
       isLoadingBoard: false,
       isLoadingItemDetail: false,

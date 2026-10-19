@@ -66,7 +66,36 @@ def ensure_phase2_schema(target_engine: Engine) -> None:
                 conn.execute(text(stmt))
 
 
-ensure_schema_migrations = ensure_phase2_schema
+def ensure_phase3_schema(target_engine: Engine) -> None:
+    """Garantiza la creación de la tabla board_automations si no existe en bases preexistentes."""
+    inspector = inspect(target_engine)
+    if "board_automations" not in inspector.get_table_names():
+        with target_engine.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS board_automations (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        board_id INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+                        rule_type VARCHAR(80) NOT NULL,
+                        target_status_key VARCHAR(60) DEFAULT 'done',
+                        is_active BOOLEAN NOT NULL DEFAULT 1,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
+            )
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_board_automations_board_id ON board_automations(board_id)"
+                )
+            )
+
+
+def ensure_schema_migrations(target_engine: Engine) -> None:
+    """Aplica todas las migraciones defensivas para bases de datos preexistentes."""
+    ensure_phase2_schema(target_engine)
+    ensure_phase3_schema(target_engine)
 
 
 def get_db() -> Generator[Session, None, None]:
