@@ -9,10 +9,16 @@ import type {
   OAuthAuthorizeResponse,
   OAuthCallbackRequest,
   OAuthProviderConfig,
+  TaskChecklistCreate,
+  TaskChecklistItemRead,
+  TaskChecklistUpdate,
+  TaskCommentCreate,
+  TaskCommentRead,
   TaskGroupCreate,
   TaskGroupRead,
   TaskGroupUpdate,
   TaskItemCreate,
+  TaskItemDetailRead,
   TaskItemRead,
   TaskItemUpdate,
   TokenResponse,
@@ -303,5 +309,62 @@ export const api = {
     return request<{ deleted: boolean; id: number }>(`/api/items/${itemId}`, {
       method: 'DELETE',
     });
+  },
+
+  // Colaboración y Detalle por Tarea (ItemDetailDrawer)
+  getTaskItemDetail(itemId: number): Promise<TaskItemDetailRead> {
+    return request<TaskItemDetailRead>(`/api/items/${itemId}/detail`);
+  },
+
+  createTaskComment(
+    itemId: number,
+    payload: TaskCommentCreate,
+  ): Promise<TaskCommentRead> {
+    return request<TaskCommentRead>(`/api/items/${itemId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteTaskComment(
+    commentId: number,
+  ): Promise<{ deleted: boolean; id: number }> {
+    return request<{ deleted: boolean; id: number }>(
+      `/api/comments/${commentId}`,
+      {
+        method: 'DELETE',
+      },
+    );
+  },
+
+  createChecklistItem(
+    itemId: number,
+    payload: TaskChecklistCreate,
+  ): Promise<TaskChecklistItemRead> {
+    return request<TaskChecklistItemRead>(`/api/items/${itemId}/checklist`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateChecklistItem(
+    checklistId: number,
+    payload: TaskChecklistUpdate,
+  ): Promise<TaskChecklistItemRead> {
+    return request<TaskChecklistItemRead>(`/api/checklist/${checklistId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteChecklistItem(
+    checklistId: number,
+  ): Promise<{ deleted: boolean; id: number }> {
+    return request<{ deleted: boolean; id: number }>(
+      `/api/checklist/${checklistId}`,
+      {
+        method: 'DELETE',
+      },
+    );
   },
 };

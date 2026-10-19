@@ -8,10 +8,14 @@ import type {
   BoardStatusUpdate,
   BoardSummaryRead,
   BoardUpdate,
+  TaskChecklistItemRead,
+  TaskChecklistUpdate,
+  TaskCommentRead,
   TaskGroupCreate,
   TaskGroupRead,
   TaskGroupUpdate,
   TaskItemCreate,
+  TaskItemDetailRead,
   TaskItemRead,
   TaskItemUpdate,
   UserRead,
@@ -35,13 +39,52 @@ function cloneBoard(board: BoardDetailRead | null): BoardDetailRead | null {
   };
 }
 
+function updateItemCountersInBoard(
+  board: BoardDetailRead | null,
+  itemId: number,
+  counters: {
+    comments_count?: number;
+    checklist_total?: number;
+    checklist_completed?: number;
+  },
+): BoardDetailRead | null {
+  if (!board) return null;
+  return {
+    ...board,
+    groups: board.groups.map((grp) => ({
+      ...grp,
+      items: grp.items.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              comments_count:
+                counters.comments_count !== undefined
+                  ? counters.comments_count
+                  : item.comments_count,
+              checklist_total:
+                counters.checklist_total !== undefined
+                  ? counters.checklist_total
+                  : item.checklist_total,
+              checklist_completed:
+                counters.checklist_completed !== undefined
+                  ? counters.checklist_completed
+                  : item.checklist_completed,
+            }
+          : item,
+      ),
+    })),
+  };
+}
+
 interface WorkspaceState {
   workspaces: WorkspaceRead[];
   activeWorkspaceId: number | null;
   activeBoardId: number | null;
   activeBoard: BoardDetailRead | null;
+  activeItemDetail: TaskItemDetailRead | null;
   isLoadingWorkspaces: boolean;
   isLoadingBoard: boolean;
+  isLoadingItemDetail: boolean;
   error: string | null;
 
   loadWorkspaces: () => Promise<void>;
@@ -93,6 +136,20 @@ interface WorkspaceState {
   ) => Promise<TaskItemRead>;
   deleteItem: (itemId: number) => Promise<void>;
 
+  openItemDrawer: (itemId: number) => Promise<void>;
+  closeItemDrawer: () => void;
+  addComment: (itemId: number, content: string) => Promise<TaskCommentRead>;
+  removeComment: (commentId: number) => Promise<void>;
+  addChecklistItem: (
+    itemId: number,
+    title: string,
+  ) => Promise<TaskChecklistItemRead>;
+  toggleOrUpdateChecklistItem: (
+    checklistId: number,
+    payload: TaskChecklistUpdate,
+  ) => Promise<TaskChecklistItemRead>;
+  removeChecklistItem: (checklistId: number) => Promise<void>;
+
   toggleGroupCollapse: (groupId: number) => void;
   clearError: () => void;
   resetStore: () => void;
@@ -103,8 +160,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   activeWorkspaceId: null,
   activeBoardId: null,
   activeBoard: null,
+  activeItemDetail: null,
   isLoadingWorkspaces: false,
   isLoadingBoard: false,
+  isLoadingItemDetail: false,
   error: null,
 
   loadWorkspaces: async () => {
@@ -121,6 +180,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           activeWorkspaceId: null,
           activeBoardId: null,
           activeBoard: null,
+          activeItemDetail: null,
           isLoadingWorkspaces: false,
         });
         return;
@@ -137,7 +197,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       if (firstBoardId !== null) {
         await get().selectBoard(firstBoardId);
       } else {
-        set({ activeBoard: null });
+        set({ activeBoard: null, activeItemDetail: null });
       }
     } catch (err) {
       const message =
@@ -156,6 +216,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({
       activeWorkspaceId: workspaceId,
       activeBoardId: firstBoardId,
+      activeItemDetail: null,
       error: null,
     });
 
@@ -177,6 +238,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         activeWorkspaceId: created.id,
         activeBoardId: firstBoardId,
         activeBoard: null,
+        activeItemDetail: null,
       });
       if (firstBoardId !== null) {
         await get().selectBoard(firstBoardId);
@@ -240,6 +302,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         activeWorkspaceId: nextWs?.id ?? null,
         activeBoardId: nextBoardId,
         activeBoard: null,
+        activeItemDetail: null,
       });
 
       if (nextBoardId !== null) {
@@ -256,7 +319,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   selectBoard: async (boardId: number) => {
-    set({ activeBoardId: boardId, isLoadingBoard: true, error: null });
+    set({
+      activeBoardId: boardId,
+      activeItemDetail: null,
+      isLoadingBoard: true,
+      error: null,
+    });
     try {
       const detail = await api.getBoardDetail(boardId);
       set({
@@ -297,6 +365,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         activeWorkspaceId: created.workspace_id,
         activeBoardId: created.id,
         activeBoard: created,
+        activeItemDetail: null,
       });
       return created;
     } catch (err) {
@@ -374,6 +443,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         workspaces: nextWorkspaces,
         activeBoardId: nextBoardId,
         activeBoard: null,
+        activeItemDetail: null,
       });
 
       if (nextBoardId !== null) {
@@ -646,6 +716,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     optimisticAssignee?: UserRead | null,
   ) => {
     const previousBoard = cloneBoard(get().activeBoard);
+    const previousItemDetail = get().activeItemDetail
+      ? { ...get().activeItemDetail! }
+      : null;
     set({ error: null });
 
     const currentBoard = get().activeBoard;
@@ -739,11 +812,16 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           return grp;
         });
 
+        const currentDetail = get().activeItemDetail;
         set({
           activeBoard: {
             ...currentBoard,
             groups: nextGroups,
           },
+          activeItemDetail:
+            currentDetail && currentDetail.id === itemId
+              ? { ...currentDetail, ...optimisticItem }
+              : currentDetail,
         });
       }
     }
@@ -768,11 +846,16 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           };
         });
 
+        const currentDetail = get().activeItemDetail;
         set({
           activeBoard: {
             ...latestBoard,
             groups: nextGroups,
           },
+          activeItemDetail:
+            currentDetail && currentDetail.id === itemId
+              ? { ...currentDetail, ...updatedItem }
+              : currentDetail,
         });
       }
       return updatedItem;
@@ -781,13 +864,18 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         err instanceof Error
           ? err.message
           : 'No se pudo actualizar la tarea.';
-      set({ activeBoard: previousBoard, error: message });
+      set({
+        activeBoard: previousBoard,
+        activeItemDetail: previousItemDetail,
+        error: message,
+      });
       throw err;
     }
   },
 
   deleteItem: async (itemId: number) => {
     const previousBoard = cloneBoard(get().activeBoard);
+    const previousItemDetail = get().activeItemDetail;
     set({ error: null });
 
     const currentBoard = get().activeBoard;
@@ -800,6 +888,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
             items: grp.items.filter((item) => item.id !== itemId),
           })),
         },
+        activeItemDetail:
+          previousItemDetail?.id === itemId ? null : previousItemDetail,
       });
     }
 
@@ -808,7 +898,215 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'No se pudo eliminar la tarea.';
-      set({ activeBoard: previousBoard, error: message });
+      set({
+        activeBoard: previousBoard,
+        activeItemDetail: previousItemDetail,
+        error: message,
+      });
+      throw err;
+    }
+  },
+
+  openItemDrawer: async (itemId: number) => {
+    set({ isLoadingItemDetail: true, error: null });
+    try {
+      const detail = await api.getTaskItemDetail(itemId);
+      const nextBoard = updateItemCountersInBoard(get().activeBoard, itemId, {
+        comments_count: detail.comments.length,
+        checklist_total: detail.checklist_items.length,
+        checklist_completed: detail.checklist_items.filter((c) => c.is_completed)
+          .length,
+      });
+      set({
+        activeItemDetail: detail,
+        activeBoard: nextBoard,
+        isLoadingItemDetail: false,
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'No se pudo cargar el detalle de la tarea.';
+      set({ isLoadingItemDetail: false, error: message });
+    }
+  },
+
+  closeItemDrawer: () => {
+    set({ activeItemDetail: null, isLoadingItemDetail: false });
+  },
+
+  addComment: async (itemId: number, content: string) => {
+    set({ error: null });
+    try {
+      const createdComment = await api.createTaskComment(itemId, { content });
+      const detail = get().activeItemDetail;
+      const nextComments = detail
+        ? [createdComment, ...detail.comments]
+        : [createdComment];
+      const nextCount = nextComments.length;
+
+      set({
+        activeItemDetail:
+          detail && detail.id === itemId
+            ? {
+                ...detail,
+                comments: nextComments,
+                comments_count: nextCount,
+              }
+            : detail,
+        activeBoard: updateItemCountersInBoard(get().activeBoard, itemId, {
+          comments_count: nextCount,
+        }),
+      });
+      return createdComment;
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'No se pudo publicar el comentario.';
+      set({ error: message });
+      throw err;
+    }
+  },
+
+  removeComment: async (commentId: number) => {
+    set({ error: null });
+    try {
+      await api.deleteTaskComment(commentId);
+      const detail = get().activeItemDetail;
+      if (!detail) return;
+      const nextComments = detail.comments.filter((c) => c.id !== commentId);
+      const nextCount = nextComments.length;
+
+      set({
+        activeItemDetail: {
+          ...detail,
+          comments: nextComments,
+          comments_count: nextCount,
+        },
+        activeBoard: updateItemCountersInBoard(get().activeBoard, detail.id, {
+          comments_count: nextCount,
+        }),
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'No se pudo eliminar el comentario.';
+      set({ error: message });
+      throw err;
+    }
+  },
+
+  addChecklistItem: async (itemId: number, title: string) => {
+    set({ error: null });
+    try {
+      const createdItem = await api.createChecklistItem(itemId, { title });
+      const detail = get().activeItemDetail;
+      const nextChecklist = detail
+        ? [...detail.checklist_items, createdItem].sort(
+            (a, b) => a.position - b.position || a.id - b.id,
+          )
+        : [createdItem];
+      const total = nextChecklist.length;
+      const completed = nextChecklist.filter((c) => c.is_completed).length;
+
+      set({
+        activeItemDetail:
+          detail && detail.id === itemId
+            ? {
+                ...detail,
+                checklist_items: nextChecklist,
+                checklist_total: total,
+                checklist_completed: completed,
+              }
+            : detail,
+        activeBoard: updateItemCountersInBoard(get().activeBoard, itemId, {
+          checklist_total: total,
+          checklist_completed: completed,
+        }),
+      });
+      return createdItem;
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'No se pudo agregar el ítem al checklist.';
+      set({ error: message });
+      throw err;
+    }
+  },
+
+  toggleOrUpdateChecklistItem: async (
+    checklistId: number,
+    payload: TaskChecklistUpdate,
+  ) => {
+    set({ error: null });
+    try {
+      const updated = await api.updateChecklistItem(checklistId, payload);
+      const detail = get().activeItemDetail;
+      if (!detail) return updated;
+
+      const nextChecklist = detail.checklist_items
+        .map((c) => (c.id === checklistId ? updated : c))
+        .sort((a, b) => a.position - b.position || a.id - b.id);
+      const total = nextChecklist.length;
+      const completed = nextChecklist.filter((c) => c.is_completed).length;
+
+      set({
+        activeItemDetail: {
+          ...detail,
+          checklist_items: nextChecklist,
+          checklist_total: total,
+          checklist_completed: completed,
+        },
+        activeBoard: updateItemCountersInBoard(get().activeBoard, detail.id, {
+          checklist_total: total,
+          checklist_completed: completed,
+        }),
+      });
+      return updated;
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'No se pudo actualizar el ítem del checklist.';
+      set({ error: message });
+      throw err;
+    }
+  },
+
+  removeChecklistItem: async (checklistId: number) => {
+    set({ error: null });
+    try {
+      await api.deleteChecklistItem(checklistId);
+      const detail = get().activeItemDetail;
+      if (!detail) return;
+
+      const nextChecklist = detail.checklist_items.filter(
+        (c) => c.id !== checklistId,
+      );
+      const total = nextChecklist.length;
+      const completed = nextChecklist.filter((c) => c.is_completed).length;
+
+      set({
+        activeItemDetail: {
+          ...detail,
+          checklist_items: nextChecklist,
+          checklist_total: total,
+          checklist_completed: completed,
+        },
+        activeBoard: updateItemCountersInBoard(get().activeBoard, detail.id, {
+          checklist_total: total,
+          checklist_completed: completed,
+        }),
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'No se pudo eliminar el ítem del checklist.';
+      set({ error: message });
       throw err;
     }
   },
@@ -834,8 +1132,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activeWorkspaceId: null,
       activeBoardId: null,
       activeBoard: null,
+      activeItemDetail: null,
       isLoadingWorkspaces: false,
       isLoadingBoard: false,
+      isLoadingItemDetail: false,
       error: null,
     }),
 }));

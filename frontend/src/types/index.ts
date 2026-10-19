@@ -125,8 +125,61 @@ export interface TaskItemRead {
   due_date?: string | null;
   notes: string;
   position: number;
+  comments_count?: number;
+  checklist_total?: number;
+  checklist_completed?: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface TaskCommentCreate {
+  content: string;
+}
+
+export interface TaskCommentRead {
+  id: number;
+  item_id: number;
+  author_id: number | null;
+  author: UserRead | null;
+  content: string;
+  created_at: string;
+}
+
+export interface TaskChecklistCreate {
+  title: string;
+  is_completed?: boolean;
+  position?: number;
+}
+
+export interface TaskChecklistUpdate {
+  title?: string;
+  is_completed?: boolean;
+  position?: number;
+}
+
+export interface TaskChecklistItemRead {
+  id: number;
+  item_id: number;
+  title: string;
+  is_completed: boolean;
+  position: number;
+  created_at: string;
+}
+
+export interface TaskActivityRead {
+  id: number;
+  item_id: number;
+  user_id: number | null;
+  user: UserRead | null;
+  action: string;
+  description: string;
+  created_at: string;
+}
+
+export interface TaskItemDetailRead extends TaskItemRead {
+  comments: TaskCommentRead[];
+  checklist_items: TaskChecklistItemRead[];
+  activities: TaskActivityRead[];
 }
 
 export interface TaskGroupRead {

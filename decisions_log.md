@@ -81,3 +81,13 @@
 - **Razón:** Auditoría del Verificador de Backend con veredicto **APROBADO ✅** y 19/19 tests automatizados en `pytest` pasando al 100% (0 fallos).
 - **Impacto:** Backend del MVP Fase 1 completado al 100%. Se habilita el **Sprint 3B (Frontend: Vista Kanban con Drag & Drop, Barra de Búsqueda/Filtros en Vivo y Panel Lateral `ItemDetailDrawer`)**.
 
+---
+
+## [19/10/2026] — Cierre y Aprobación del Sprint 3B (Frontend: Vista Kanban con Drag & Drop, Búsqueda/Filtros en Vivo y Panel Lateral `ItemDetailDrawer`) — MVP Fase 1 Completado
+- **Decisión:**
+  1. Se aprueba e integra en `frontend/` la Vista Kanban interactiva (`KanbanView.tsx`) con columnas dinámicas por estado del tablero, Drag & Drop de tarjetas entre columnas con **Optimistic Update** sincronizado en tiempo real con la Vista Tabla Principal, y creación rápida de tarjetas por columna.
+  2. Se integra la barra de búsqueda y filtros en vivo en `BoardView.tsx` (por texto, persona asignada, estado y prioridad), aplicable simultáneamente a la Vista Tabla y a la Vista Kanban.
+  3. Se integra el Panel Lateral de Detalle y Colaboración (`ItemDetailDrawer.tsx`) con pestañas de **Checklist Interno** (con barra de progreso porcentual), **Comentarios** e **Historial de Actividad**, manteniendo sincronizados en vivo los contadores `comments_count`, `checklist_total` y `checklist_completed` en las filas y tarjetas del tablero.
+- **Razón:** Auditoría del Verificador de Frontend con veredicto **APROBADO ✅**, 15/15 tests automatizados en `Vitest` (4 suites) pasando al 100% y build de producción limpio con 0 errores.
+- **Impacto:** **MVP Fase 1 completado al 100%** con 34 pruebas automatizadas totales en verde (**19 en Backend `pytest` + 15 en Frontend `Vitest`**).
+
