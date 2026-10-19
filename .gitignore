@@ -14,6 +14,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.egg-info/
+.pytest_cache/
 
 # Bases de datos y runtime
 *.db
@@ -24,3 +25,4 @@ __pycache__/
 # Sistema operativo
 .DS_Store
 Thumbs.db
+

@@ -15,3 +15,30 @@
   3. Se establece el flujo de pruebas automatizadas locales con 100% de aprobación antes de cada integración a la rama principal de Git.
 - **Razón:** Garantizar máxima velocidad de desarrollo sin sacrificar robustez técnica, eliminando regresiones, errores de diseño y código desordenado desde el día cero.
 - **Impacto:** Arquitectura predecible, desacoplada y con trazabilidad completa de cada avance.
+
+---
+
+## [19/10/2026] — Definición de Stack Tecnológico (Opción A), Estados Personalizables y Login OAuth2 (Google y Microsoft) desde Sprint 1
+- **Decisión:**
+  1. **Stack Tecnológico Confirmado (Opción A):**
+     - **Frontend (`frontend/`):** React 18 + Vite + TypeScript + Tailwind CSS + Lucide Icons + Zustand (con Optimistic Updates) + `@hello-pangea/dnd` / `@dnd-kit` + Vitest / React Testing Library.
+     - **Backend (`backend/`):** Python 3.11+ + FastAPI + Pydantic v2 + SQLAlchemy 2.0 + PyJWT + HTTPX + Pytest.
+     - **Base de Datos:** SQLite para desarrollo local y testing automatizado en memoria + PostgreSQL listo para producción mediante `DATABASE_URL`.
+  2. **Estados por Defecto y Personalización por Tablero:**
+     - Se adoptan 5 estados iniciales por defecto en cada tablero nuevo: `Listo` (`#00c875`), `En Proceso` (`#fdab3d`), `Bloqueado` (`#e2445c`), `Traspasado` (`#a25ddc`) y `Sin Empezar` (`#c4c4c4`), con soporte en el modelo de datos y API para personalizar etiquetas y colores por tablero.
+  3. **Autenticación Completa desde Sprint 1 (Google & Microsoft OAuth2 / OIDC):**
+     - Se implementa desde el Sprint 1 autenticación federada con **Google** (`accounts.google.com`) y **Microsoft / Entra ID** (`login.microsoftonline.com`) emitiendo sesiones firmadas con JWT (`HS256`).
+     - Se incorpora el modo híbrido `AUTH_DEV_MODE`: cuando están configuradas las credenciales reales (`GOOGLE_CLIENT_ID`, `MICROSOFT_CLIENT_ID`, etc.) opera contra los proveedores OAuth reales; cuando se ejecuta en local sin credenciales externas aún configuradas o en suites de pruebas automatizadas (`AUTH_DEV_MODE=true`), habilita un flujo simulado determinístico de Google y Microsoft para garantizar testabilidad al 100% y cero bloqueo en desarrollo.
+- **Razón:** Separar claramente las responsabilidades entre Frontend (React/TS) y Backend (Python/FastAPI) maximiza la efectividad de los agentes Implementadores y Verificadores independientes, mientras que el soporte OAuth2 dual (Google/Microsoft real + simulador local en dev/test) permite tener seguridad de nivel productivo desde el Sprint 1 sin frenar el flujo de pruebas locales.
+- **Impacto:** El Sprint 1 se divide en **Sprint 1A (Backend: Modelos, Auth Google/Microsoft, Workspaces, Boards, StatusConfig y Semilla + Pytest)** y **Sprint 1B (Frontend: Pantalla de Login Google/Microsoft, Layout Monday, Sidebar de Workspaces/Boards + Vitest)**.
+
+---
+
+## [19/10/2026] — Cierre y Aprobación del Sprint 1A (Backend: Cimientos, OAuth2 Google/Microsoft, Workspaces, Boards y Estados Personalizables)
+- **Decisión:**
+  1. Se aprueba e integra en `backend/` la arquitectura base en **FastAPI + SQLAlchemy 2.0 + Pydantic v2 + PyJWT + HTTPX**.
+  2. Se valida el motor dual de autenticación OAuth2 / OIDC para **Google** (`accounts.google.com`) y **Microsoft** (`login.microsoftonline.com`) con emisión de JWT (`HS256`) y simulador local protegido por `AUTH_DEV_MODE`.
+  3. Se validan los endpoints protegidos de Workspaces (`/api/workspaces`), Boards (`/api/boards`) y estados personalizables por tablero (`/api/boards/{board_id}/statuses`) con reasignación automática de tareas al eliminar un estado y bloqueo ante eliminación del último estado restante.
+- **Razón:** Auditoría del Verificador de Backend con veredicto **APROBADO ✅** y 11/11 tests automatizados en `pytest` pasando al 100% (0 fallos).
+- **Impacto:** Backend del Sprint 1 listo y versionado en Git. Se habilita el inicio del **Sprint 1B (Frontend)**.
+

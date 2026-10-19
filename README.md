@@ -34,3 +34,4 @@ El proyecto se desarrolla bajo el modelo de **Desarrollo Guiado por Especificaci
 
 1. Abrí esta carpeta en **Antigravity**.
 2. Iniciá una conversación con el prompt del **Coordinador** para definir el stack tecnológico y la hoja de ruta de la Fase 1 (MVP).
+

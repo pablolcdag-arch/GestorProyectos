@@ -29,16 +29,24 @@
    - Cada tablero contiene uno o más grupos desplegables (ej: "Esta Semana", "En Progreso", "Completadas").
    - Cada grupo contiene múltiples items (tareas) que pueden crearse, editarse inline y reordenarse.
 3. **Columnas Dinámicas y Tipadas:**
-   - **Estado (Status):** Píldoras con colores personalizables (ej: Listo [Verde], En Proceso [Naranja], Bloqueado [Rojo], Sin Empezar [Gris]).
+   - **Estado (Status):** Píldoras con colores personalizables por tablero. Estados iniciales por defecto:
+     - `Listo` (Verde `#00c875`)
+     - `En Proceso` (Naranja `#fdab3d`)
+     - `Bloqueado` (Rojo `#e2445c`)
+     - `Traspasado` (Violeta `#a25ddc`)
+     - `Sin Empezar` (Gris `#c4c4c4`)
    - **Responsable (People):** Asignación de miembros del equipo con avatar.
    - **Fecha / Cronograma (Date / Timeline):** Fechas límite o rangos de tiempo con alertas de vencimiento.
-   - **Prioridad:** Alta, Media, Baja con código visual.
+   - **Prioridad:** Crítica, Alta, Media, Baja con código visual.
    - **Texto y Números:** Notas rápidas, presupuestos o estimaciones de tiempo.
 4. **Vistas Múltiples:**
    - **Vista Tabla (Main Table):** Vista principal tipo hoja de cálculo interactiva con edición en vivo.
    - **Vista Kanban:** Tarjetas arrastrables organizadas por columna de estado.
 5. **Actividad y Colaboración:**
    - Panel lateral de detalle por tarea con historial de cambios, comentarios y checklist interno.
+6. **Autenticación y Seguridad (Desde Sprint 1):**
+   - **Login SSO con Google y Microsoft (OAuth2 / OIDC):** Autenticación federada con cuentas de Google (`accounts.google.com`) y Microsoft / Entra ID (`login.microsoftonline.com`), con emisión de sesiones JWT firmadas.
+   - **Soporte Dual Producción + Desarrollo Local (`AUTH_DEV_MODE`):** Funciona con credenciales reales de Google Cloud / Azure Portal vía variables de entorno y provee un simulador OAuth local determinístico cuando `AUTH_DEV_MODE=true` para desarrollo local sin bloqueo y pruebas automatizadas al 100%.
 
 ---
 
@@ -63,14 +71,20 @@ Para garantizar la máxima calidad técnica, mantenibilidad y cero errores, el d
 
 ---
 
-## 💻 Stack Tecnológico (A confirmar en Sesión 1 con Coordinador)
+## 💻 Stack Tecnológico Confirmado (Opción A)
 
-*El Coordinador propondrá y acordará con el usuario el stack óptimo en la primera sesión de planificación según los requerimientos de performance, facilidad de despliegue y UX.*
-
-- **Frontend sugerido:** React / Next.js / Vue / Vite + Tailwind CSS + Lucide Icons + drag-and-drop accesible (ej: `@hello-pangea/dnd` o dnd-kit).
-- **Backend sugerido:** Python (FastAPI / Flask) o Node.js / TypeScript (Express / Fastify / Next API).
-- **Base de Datos sugerida:** PostgreSQL (Supabase o Postgres local/Docker) + SQLite para testing rápido / soporte local.
-- **Control de Versiones:** Git (GitHub/GitLab).
+- **Frontend (`frontend/`):**
+  - **Core:** React 18 + Vite + TypeScript.
+  - **Estilos e Iconografía:** Tailwind CSS + Lucide Icons.
+  - **Estado y Sincronización:** Zustand (con Optimistic Updates y rollback automático ante errores de red).
+  - **Drag & Drop:** `@hello-pangea/dnd` / `@dnd-kit`.
+  - **Testing Frontend:** Vitest + React Testing Library + jsdom.
+- **Backend (`backend/`):**
+  - **Core:** Python 3.11+ + FastAPI + Pydantic v2.
+  - **ORM y Persistencia:** SQLAlchemy 2.0 (SQLite local y en memoria para tests rápidos + PostgreSQL para producción vía `DATABASE_URL`).
+  - **Autenticación:** OAuth2 / OIDC (Google & Microsoft) con `httpx` + `PyJWT`.
+  - **Testing Backend:** Pytest + FastAPI `TestClient`.
+- **Control de Versiones:** Git.
 
 ---
 
@@ -91,3 +105,4 @@ Para garantizar la máxima calidad técnica, mantenibilidad y cero errores, el d
 
 - Cada feature nueva debe nacer acompañada de su script de prueba automatizado en `tests/` o `scripts/utils/`.
 - Antes de que el Verificador apruebe cualquier entrega, **todas las suites de pruebas del proyecto deben pasar con 100% de éxito (0 fallos)**.
+
