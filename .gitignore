@@ -1,0 +1,26 @@
+# Entornos y dependencias
+.env
+.env.*
+!.env.example
+venv/
+env/
+node_modules/
+dist/
+build/
+.next/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# Bases de datos y runtime
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
