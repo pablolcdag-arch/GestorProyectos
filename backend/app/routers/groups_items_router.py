@@ -10,7 +10,14 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import Board, BoardStatusConfig, TaskGroup, TaskItem, User
+from app.models import (
+    Board,
+    BoardStatusConfig,
+    TaskActivityLog,
+    TaskGroup,
+    TaskItem,
+    User,
+)
 from app.schemas import (
     TaskGroupCreate,
     TaskGroupRead,
@@ -67,14 +74,17 @@ def _validate_user_exists(db: Session, user_id: int) -> User:
     return user
 
 
-def _get_board_status_keys(db: Session, board_id: int) -> list[str]:
-    statuses = (
+def _get_board_statuses(db: Session, board_id: int) -> list[BoardStatusConfig]:
+    return (
         db.query(BoardStatusConfig)
         .filter(BoardStatusConfig.board_id == board_id)
         .order_by(BoardStatusConfig.position.asc(), BoardStatusConfig.id.asc())
         .all()
     )
-    return [st.key for st in statuses]
+
+
+def _get_board_status_keys(db: Session, board_id: int) -> list[str]:
+    return [st.key for st in _get_board_statuses(db, board_id)]
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +223,16 @@ def create_task_item(
         position=next_position,
     )
     db.add(new_item)
+    db.flush()
+
+    db.add(
+        TaskActivityLog(
+            item_id=new_item.id,
+            user_id=current_user.id,
+            action="item_created",
+            description=f"Creó la tarea '{new_item.title}'",
+        )
+    )
     db.commit()
     db.refresh(new_item)
     return new_item
@@ -225,7 +245,7 @@ def update_task_item(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> TaskItem:
-    """Edición inline parcial de una tarea (soporta desasignación y limpieza de fecha)."""
+    """Edición inline parcial de una tarea con auditoría automática en TaskActivityLog."""
     item = _get_item_or_404(db, item_id)
     fields_set = payload.model_fields_set
 
@@ -235,7 +255,16 @@ def update_task_item(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="El título de la tarea no puede ser nulo.",
             )
-        item.title = payload.title
+        if payload.title != item.title:
+            item.title = payload.title
+            db.add(
+                TaskActivityLog(
+                    item_id=item.id,
+                    user_id=current_user.id,
+                    action="title_changed",
+                    description=f"Renombró la tarea a '{payload.title}'",
+                )
+            )
 
     if "group_id" in fields_set:
         if payload.group_id is None:
@@ -249,7 +278,16 @@ def update_task_item(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="No se puede mover una tarea a un grupo perteneciente a otro tablero.",
             )
-        item.group_id = target_group.id
+        if target_group.id != item.group_id:
+            item.group_id = target_group.id
+            db.add(
+                TaskActivityLog(
+                    item_id=item.id,
+                    user_id=current_user.id,
+                    action="group_changed",
+                    description=f"Movió la tarea al grupo '{target_group.title}'",
+                )
+            )
 
     if "status_key" in fields_set:
         if payload.status_key is None:
@@ -257,8 +295,9 @@ def update_task_item(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="El status_key no puede ser nulo.",
             )
-        valid_status_keys = _get_board_status_keys(db, item.board_id)
-        if payload.status_key not in valid_status_keys:
+        board_statuses = _get_board_statuses(db, item.board_id)
+        status_by_key = {st.key: st.label for st in board_statuses}
+        if payload.status_key not in status_by_key:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=(
@@ -266,7 +305,17 @@ def update_task_item(
                     f"configurados en el tablero {item.board_id}."
                 ),
             )
-        item.status_key = payload.status_key
+        if payload.status_key != item.status_key:
+            item.status_key = payload.status_key
+            status_label = status_by_key[payload.status_key]
+            db.add(
+                TaskActivityLog(
+                    item_id=item.id,
+                    user_id=current_user.id,
+                    action="status_changed",
+                    description=f"Cambió el estado a '{status_label}'",
+                )
+            )
 
     if "priority" in fields_set:
         if payload.priority is None:
@@ -274,17 +323,58 @@ def update_task_item(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="La prioridad no puede ser nula.",
             )
-        item.priority = payload.priority
+        if payload.priority != item.priority:
+            item.priority = payload.priority
+            db.add(
+                TaskActivityLog(
+                    item_id=item.id,
+                    user_id=current_user.id,
+                    action="priority_changed",
+                    description=f"Cambió la prioridad a '{payload.priority}'",
+                )
+            )
 
     if "assignee_id" in fields_set:
         if payload.assignee_id is None:
-            item.assignee_id = None
+            if item.assignee_id is not None:
+                item.assignee_id = None
+                db.add(
+                    TaskActivityLog(
+                        item_id=item.id,
+                        user_id=current_user.id,
+                        action="assignee_changed",
+                        description="Desasignó el responsable",
+                    )
+                )
         else:
-            _validate_user_exists(db, payload.assignee_id)
-            item.assignee_id = payload.assignee_id
+            assigned_user = _validate_user_exists(db, payload.assignee_id)
+            if payload.assignee_id != item.assignee_id:
+                item.assignee_id = payload.assignee_id
+                db.add(
+                    TaskActivityLog(
+                        item_id=item.id,
+                        user_id=current_user.id,
+                        action="assignee_changed",
+                        description=f"Asignó la tarea a {assigned_user.full_name}",
+                    )
+                )
 
     if "due_date" in fields_set:
-        item.due_date = payload.due_date
+        if payload.due_date != item.due_date:
+            item.due_date = payload.due_date
+            desc = (
+                "Eliminó la fecha límite"
+                if payload.due_date is None
+                else f"Definió la fecha límite para {payload.due_date}"
+            )
+            db.add(
+                TaskActivityLog(
+                    item_id=item.id,
+                    user_id=current_user.id,
+                    action="due_date_changed",
+                    description=desc,
+                )
+            )
 
     if "notes" in fields_set:
         item.notes = payload.notes if payload.notes is not None else ""

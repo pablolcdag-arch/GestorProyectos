@@ -11,7 +11,13 @@ from fastapi.middleware.cors import CORSMiddleware
 import app.database as db_module
 from app.config import settings
 from app.database import Base
-from app.routers import auth_router, boards_router, groups_items_router, workspaces_router
+from app.routers import (
+    auth_router,
+    boards_router,
+    groups_items_router,
+    item_collaboration_router,
+    workspaces_router,
+)
 from app.seed import seed_initial_data
 
 
@@ -47,6 +53,7 @@ app.include_router(auth_router.router)
 app.include_router(workspaces_router.router)
 app.include_router(boards_router.router)
 app.include_router(groups_items_router.router)
+app.include_router(item_collaboration_router.router)
 
 
 @app.get("/api/health", tags=["Health"])

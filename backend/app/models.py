@@ -181,4 +181,108 @@ class TaskItem(Base):
     group: Mapped["TaskGroup"] = relationship("TaskGroup", back_populates="items")
     board: Mapped["Board"] = relationship("Board", back_populates="items")
     assignee: Mapped[Optional["User"]] = relationship("User", foreign_keys=[assignee_id])
+    comments: Mapped[list["TaskComment"]] = relationship(
+        "TaskComment",
+        back_populates="item",
+        cascade="all, delete-orphan",
+        order_by="TaskComment.id.desc()",
+    )
+    checklist_items: Mapped[list["TaskChecklistItem"]] = relationship(
+        "TaskChecklistItem",
+        back_populates="item",
+        cascade="all, delete-orphan",
+        order_by="TaskChecklistItem.position.asc(), TaskChecklistItem.id.asc()",
+    )
+    activities: Mapped[list["TaskActivityLog"]] = relationship(
+        "TaskActivityLog",
+        back_populates="item",
+        cascade="all, delete-orphan",
+        order_by="TaskActivityLog.id.desc()",
+    )
+
+    @property
+    def comments_count(self) -> int:
+        """Cantidad total de comentarios asociados a la tarea."""
+        return len(self.comments)
+
+    @property
+    def checklist_total(self) -> int:
+        """Cantidad total de ítems en el checklist interno de la tarea."""
+        return len(self.checklist_items)
+
+    @property
+    def checklist_completed(self) -> int:
+        """Cantidad de ítems completados en el checklist interno de la tarea."""
+        return sum(1 for c in self.checklist_items if c.is_completed)
+
+
+class TaskComment(Base):
+    """Comentario publicado por un usuario dentro de una tarea."""
+
+    __tablename__ = "task_comments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    item_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("task_items.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    author_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+    item: Mapped["TaskItem"] = relationship("TaskItem", back_populates="comments")
+    author: Mapped[Optional["User"]] = relationship("User", foreign_keys=[author_id])
+
+
+class TaskChecklistItem(Base):
+    """Subtarea o ítem de checklist interno asociado a una tarea."""
+
+    __tablename__ = "task_checklist_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    item_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("task_items.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+    item: Mapped["TaskItem"] = relationship("TaskItem", back_populates="checklist_items")
+
+
+class TaskActivityLog(Base):
+    """Registro de auditoría de cambios y actividad ocurridos en una tarea."""
+
+    __tablename__ = "task_activity_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    item_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("task_items.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    user_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    action: Mapped[str] = mapped_column(String(80), nullable=False)
+    description: Mapped[str] = mapped_column(String(500), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+    item: Mapped["TaskItem"] = relationship("TaskItem", back_populates="activities")
+    user: Mapped[Optional["User"]] = relationship("User", foreign_keys=[user_id])
 

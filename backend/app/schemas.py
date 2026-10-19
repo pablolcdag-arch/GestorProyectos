@@ -329,8 +329,98 @@ class TaskItemRead(BaseModel):
     due_date: Optional[str] = None
     notes: str
     position: int
+    comments_count: int = 0
+    checklist_total: int = 0
+    checklist_completed: int = 0
     created_at: datetime
     updated_at: datetime
+
+
+class TaskCommentCreate(BaseModel):
+    """Payload para publicar un comentario en una tarea."""
+
+    content: str
+
+    @field_validator("content")
+    @classmethod
+    def check_content(cls, v: str) -> str:
+        return validate_non_empty_text(v, "content")
+
+
+class TaskCommentRead(BaseModel):
+    """Representación de un comentario dentro del detalle de una tarea."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    item_id: int
+    author_id: Optional[int] = None
+    author: Optional[UserRead] = None
+    content: str
+    created_at: datetime
+
+
+class TaskChecklistCreate(BaseModel):
+    """Payload para agregar un ítem al checklist interno de una tarea."""
+
+    title: str
+    is_completed: bool = False
+    position: Optional[int] = None
+
+    @field_validator("title")
+    @classmethod
+    def check_title(cls, v: str) -> str:
+        return validate_non_empty_text(v, "title")
+
+
+class TaskChecklistUpdate(BaseModel):
+    """Payload para actualizar título, estado completado o posición de un ítem del checklist."""
+
+    title: Optional[str] = None
+    is_completed: Optional[bool] = None
+    position: Optional[int] = None
+
+    @field_validator("title")
+    @classmethod
+    def check_title(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        return validate_non_empty_text(v, "title")
+
+
+class TaskChecklistItemRead(BaseModel):
+    """Representación de un ítem del checklist interno de una tarea."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    item_id: int
+    title: str
+    is_completed: bool
+    position: int
+    created_at: datetime
+
+
+class TaskActivityRead(BaseModel):
+    """Representación de un registro en el historial de actividad de una tarea."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    item_id: int
+    user_id: Optional[int] = None
+    user: Optional[UserRead] = None
+    action: str
+    description: str
+    created_at: datetime
+
+
+class TaskItemDetailRead(TaskItemRead):
+    """Detalle enriquecido de una tarea incluyendo comentarios, checklist e historial."""
+
+    comments: list[TaskCommentRead] = []
+    checklist_items: list[TaskChecklistItemRead] = []
+    activities: list[TaskActivityRead] = []
 
 
 class TaskGroupRead(BaseModel):

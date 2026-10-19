@@ -8,6 +8,9 @@ from app.models import (
     DEFAULT_BOARD_STATUSES,
     Board,
     BoardStatusConfig,
+    TaskActivityLog,
+    TaskChecklistItem,
+    TaskComment,
     TaskGroup,
     TaskItem,
     User,
@@ -18,6 +21,24 @@ from app.models import (
 def seed_initial_data(db: Session) -> None:
     """Puebla la base de datos con el equipo inicial, workspaces y tableros si está vacía."""
     if db.query(User).count() > 0:
+        # Si la DB local fue creada en Sprints previos, asegurar semilla de colaboración si está vacía
+        if (
+            db.query(TaskComment).count() == 0
+            and db.query(TaskChecklistItem).count() == 0
+            and db.query(TaskActivityLog).count() == 0
+        ):
+            first_item = db.query(TaskItem).order_by(TaskItem.id.asc()).first()
+            first_user = db.query(User).order_by(User.id.asc()).first()
+            if first_item and first_user:
+                _seed_collaboration_for_items(
+                    db=db,
+                    primary_item=first_item,
+                    secondary_item=first_item,
+                    ana=first_user,
+                    carlos=first_user,
+                    lucia=first_user,
+                )
+                db.commit()
         return
 
     # 1. Crear los 4 usuarios de equipo
@@ -296,5 +317,80 @@ def seed_initial_data(db: Session) -> None:
     ]
 
     db.add_all(roadmap_tasks + marketing_tasks)
+    db.flush()
+
+    _seed_collaboration_for_items(
+        db=db,
+        primary_item=roadmap_tasks[0],
+        secondary_item=roadmap_tasks[2],
+        ana=ana,
+        carlos=carlos,
+        lucia=lucia,
+    )
     db.commit()
+
+
+def _seed_collaboration_for_items(
+    db: Session,
+    primary_item: TaskItem,
+    secondary_item: TaskItem,
+    ana: User,
+    carlos: User,
+    lucia: User,
+) -> None:
+    """Agrega comentarios, checklist interno e historial de actividad inicial."""
+    comments = [
+        TaskComment(
+            item_id=primary_item.id,
+            author_id=ana.id,
+            content="Ya quedaron listos los endpoints de autorización para Google y Microsoft con soporte dual.",
+        ),
+        TaskComment(
+            item_id=primary_item.id,
+            author_id=carlos.id,
+            content="Excelente, verifiqué también el flujo con cuentas de desarrollo y tokens JWT firmados.",
+        ),
+    ]
+    checklist = [
+        TaskChecklistItem(
+            item_id=primary_item.id,
+            title="Configurar proveedor OAuth2 de Google",
+            is_completed=True,
+            position=0,
+        ),
+        TaskChecklistItem(
+            item_id=primary_item.id,
+            title="Configurar proveedor OAuth2 de Microsoft Entra ID",
+            is_completed=True,
+            position=1,
+        ),
+        TaskChecklistItem(
+            item_id=primary_item.id,
+            title="Documentar variables de entorno en .env.example",
+            is_completed=False,
+            position=2,
+        ),
+    ]
+    activities = [
+        TaskActivityLog(
+            item_id=primary_item.id,
+            user_id=ana.id,
+            action="item_created",
+            description=f"Creó la tarea '{primary_item.title}'",
+        ),
+        TaskActivityLog(
+            item_id=primary_item.id,
+            user_id=ana.id,
+            action="status_changed",
+            description="Cambió el estado a 'En Proceso'",
+        ),
+        TaskActivityLog(
+            item_id=secondary_item.id,
+            user_id=lucia.id,
+            action="item_created",
+            description=f"Creó la tarea '{secondary_item.title}'",
+        ),
+    ]
+    db.add_all(comments + checklist + activities)
+
 

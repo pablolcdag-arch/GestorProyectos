@@ -71,3 +71,13 @@
 - **Razón:** Auditoría del Verificador de Frontend con veredicto **APROBADO ✅**, 12/12 tests automatizados en `Vitest` (3 suites) pasando al 100% y build de producción limpio con 0 errores.
 - **Impacto:** Sprint 2 completado de punta a punta. Se inicia el **Sprint 3 (Actividad/Comentarios, Checklist por Tarea, Vista Kanban con Drag & Drop, Filtros en Vivo y Panel Lateral de Detalle / Item Drawer)**.
 
+---
+
+## [19/10/2026] — Cierre y Aprobación del Sprint 3A (Backend: Comentarios, Checklist Interno e Historial de Actividad por Tarea)
+- **Decisión:**
+  1. Se aprueba e integra en `backend/app/models.py`, `backend/app/schemas.py` y `backend/app/routers/item_collaboration_router.py` el modelo de colaboración por tarea (`TaskComment`, `TaskChecklistItem`, `TaskActivityLog`) con borrado en cascada (`all, delete-orphan`).
+  2. Se exponen los contadores `comments_count`, `checklist_total` y `checklist_completed` en `TaskItemRead` y se habilita la auditoría automática en `TaskActivityLog` ante la creación de tareas, cambios efectivos de celda en `PATCH /api/items/{item_id}`, comentarios y checklist.
+  3. Se actualiza `seed.py` con bloque defensivo para poblar datos iniciales de colaboración incluso sobre bases SQLite preexistentes.
+- **Razón:** Auditoría del Verificador de Backend con veredicto **APROBADO ✅** y 19/19 tests automatizados en `pytest` pasando al 100% (0 fallos).
+- **Impacto:** Backend del MVP Fase 1 completado al 100%. Se habilita el **Sprint 3B (Frontend: Vista Kanban con Drag & Drop, Barra de Búsqueda/Filtros en Vivo y Panel Lateral `ItemDetailDrawer`)**.
+
