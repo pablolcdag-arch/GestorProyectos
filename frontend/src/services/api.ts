@@ -9,6 +9,12 @@ import type {
   OAuthAuthorizeResponse,
   OAuthCallbackRequest,
   OAuthProviderConfig,
+  TaskGroupCreate,
+  TaskGroupRead,
+  TaskGroupUpdate,
+  TaskItemCreate,
+  TaskItemRead,
+  TaskItemUpdate,
   TokenResponse,
   UserRead,
   WorkspaceCreate,
@@ -244,5 +250,58 @@ export const api = {
       },
     );
   },
-};
 
+  // Grupos de Tareas (TaskGroup)
+  createTaskGroup(
+    boardId: number,
+    payload: TaskGroupCreate,
+  ): Promise<TaskGroupRead> {
+    return request<TaskGroupRead>(`/api/boards/${boardId}/groups`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateTaskGroup(
+    groupId: number,
+    payload: TaskGroupUpdate,
+  ): Promise<TaskGroupRead> {
+    return request<TaskGroupRead>(`/api/groups/${groupId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteTaskGroup(groupId: number): Promise<{ deleted: boolean; id: number }> {
+    return request<{ deleted: boolean; id: number }>(`/api/groups/${groupId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Filas / Tareas (TaskItem)
+  createTaskItem(
+    groupId: number,
+    payload: TaskItemCreate,
+  ): Promise<TaskItemRead> {
+    return request<TaskItemRead>(`/api/groups/${groupId}/items`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateTaskItem(
+    itemId: number,
+    payload: TaskItemUpdate,
+  ): Promise<TaskItemRead> {
+    return request<TaskItemRead>(`/api/items/${itemId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteTaskItem(itemId: number): Promise<{ deleted: boolean; id: number }> {
+    return request<{ deleted: boolean; id: number }>(`/api/items/${itemId}`, {
+      method: 'DELETE',
+    });
+  },
+};

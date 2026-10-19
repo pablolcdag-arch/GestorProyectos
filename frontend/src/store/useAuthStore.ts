@@ -16,6 +16,7 @@ interface AuthState {
   user: UserRead | null;
   token: string | null;
   providers: OAuthProviderConfig[];
+  users: UserRead[];
   teamUsers: UserRead[];
   isLoading: boolean;
   isInitializing: boolean;
@@ -40,6 +41,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: getAccessToken(),
   providers: [],
+  users: [],
   teamUsers: [],
   isLoading: false,
   isInitializing: true,
@@ -126,7 +128,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loadTeamUsers: async () => {
     try {
       const users = await api.getUsers();
-      set({ teamUsers: users });
+      set({ users, teamUsers: users });
     } catch {
       // No bloquear la interfaz si la lista de usuarios falla
     }
@@ -137,6 +139,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({
       user: null,
       token: null,
+      users: [],
       teamUsers: [],
       error: null,
       isLoading: false,
@@ -151,6 +154,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user: null,
       token: null,
       providers: [],
+      users: [],
       teamUsers: [],
       isLoading: false,
       isInitializing: false,

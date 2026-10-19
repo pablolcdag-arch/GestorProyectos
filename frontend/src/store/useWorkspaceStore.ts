@@ -8,10 +8,32 @@ import type {
   BoardStatusUpdate,
   BoardSummaryRead,
   BoardUpdate,
+  TaskGroupCreate,
+  TaskGroupRead,
+  TaskGroupUpdate,
+  TaskItemCreate,
+  TaskItemRead,
+  TaskItemUpdate,
+  UserRead,
   WorkspaceCreate,
   WorkspaceRead,
   WorkspaceUpdate,
 } from '../types';
+
+function cloneBoard(board: BoardDetailRead | null): BoardDetailRead | null {
+  if (!board) return null;
+  return {
+    ...board,
+    statuses: board.statuses.map((st) => ({ ...st })),
+    groups: board.groups.map((grp) => ({
+      ...grp,
+      items: grp.items.map((item) => ({
+        ...item,
+        assignee: item.assignee ? { ...item.assignee } : item.assignee,
+      })),
+    })),
+  };
+}
 
 interface WorkspaceState {
   workspaces: WorkspaceRead[];
@@ -49,6 +71,27 @@ interface WorkspaceState {
     payload: BoardStatusUpdate,
   ) => Promise<BoardStatusRead>;
   deleteBoardStatus: (boardId: number, statusId: number) => Promise<void>;
+
+  createGroup: (
+    boardId: number,
+    payload: TaskGroupCreate,
+  ) => Promise<TaskGroupRead>;
+  updateGroup: (
+    groupId: number,
+    payload: TaskGroupUpdate,
+  ) => Promise<TaskGroupRead>;
+  deleteGroup: (groupId: number) => Promise<void>;
+
+  createItem: (
+    groupId: number,
+    payload: TaskItemCreate,
+  ) => Promise<TaskItemRead>;
+  updateItem: (
+    itemId: number,
+    payload: TaskItemUpdate,
+    optimisticAssignee?: UserRead | null,
+  ) => Promise<TaskItemRead>;
+  deleteItem: (itemId: number) => Promise<void>;
 
   toggleGroupCollapse: (groupId: number) => void;
   clearError: () => void;
@@ -162,7 +205,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       const updated = await api.updateWorkspace(workspaceId, payload);
       set({
         workspaces: get().workspaces.map((ws) =>
-          ws.id === workspaceId ? { ...ws, ...updated, boards: updated.boards ?? ws.boards } : ws,
+          ws.id === workspaceId
+            ? { ...ws, ...updated, boards: updated.boards ?? ws.boards }
+            : ws,
         ),
       });
       return updated;
@@ -263,7 +308,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   updateBoard: async (boardId: number, payload: BoardUpdate) => {
-    const prevBoard = get().activeBoard;
+    const prevBoard = cloneBoard(get().activeBoard);
     const prevWorkspaces = get().workspaces;
 
     if (prevBoard && prevBoard.id === boardId) {
@@ -374,14 +419,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     statusId: number,
     payload: BoardStatusUpdate,
   ) => {
-    const previousBoard = get().activeBoard;
+    const previousBoard = cloneBoard(get().activeBoard);
     set({ error: null });
 
-    if (previousBoard && previousBoard.id === boardId) {
+    const current = get().activeBoard;
+    if (current && current.id === boardId) {
       set({
         activeBoard: {
-          ...previousBoard,
-          statuses: previousBoard.statuses.map((st) =>
+          ...current,
+          statuses: current.statuses.map((st) =>
             st.id === statusId
               ? {
                   ...st,
@@ -422,7 +468,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   deleteBoardStatus: async (boardId: number, statusId: number) => {
-    const previousBoard = get().activeBoard;
+    const previousBoard = cloneBoard(get().activeBoard);
     const statusToDelete = previousBoard?.statuses.find(
       (st) => st.id === statusId,
     );
@@ -451,7 +497,318 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'No se pudo eliminar el estado.';
+      set({ activeBoard: previousBoard, error: message });
+      throw err;
+    }
+  },
+
+  createGroup: async (boardId: number, payload: TaskGroupCreate) => {
+    set({ error: null });
+    try {
+      const createdGroup = await api.createTaskGroup(boardId, payload);
+      const currentBoard = get().activeBoard;
+      if (currentBoard && currentBoard.id === boardId) {
+        const groupWithItems: TaskGroupRead = {
+          ...createdGroup,
+          items: createdGroup.items ?? [],
+        };
+        const nextGroups = [...currentBoard.groups, groupWithItems].sort(
+          (a, b) => a.position - b.position || a.id - b.id,
+        );
+        set({
+          activeBoard: {
+            ...currentBoard,
+            groups: nextGroups,
+          },
+        });
+      }
+      return createdGroup;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'No se pudo crear el grupo.';
       set({ error: message });
+      throw err;
+    }
+  },
+
+  updateGroup: async (groupId: number, payload: TaskGroupUpdate) => {
+    const previousBoard = cloneBoard(get().activeBoard);
+    set({ error: null });
+
+    const currentBoard = get().activeBoard;
+    if (currentBoard) {
+      set({
+        activeBoard: {
+          ...currentBoard,
+          groups: currentBoard.groups.map((grp) =>
+            grp.id === groupId
+              ? {
+                  ...grp,
+                  title: payload.title ?? grp.title,
+                  color: payload.color ?? grp.color,
+                  position: payload.position ?? grp.position,
+                  collapsed: payload.collapsed ?? grp.collapsed,
+                }
+              : grp,
+          ),
+        },
+      });
+    }
+
+    try {
+      const updatedGroup = await api.updateTaskGroup(groupId, payload);
+      const latestBoard = get().activeBoard;
+      if (latestBoard) {
+        set({
+          activeBoard: {
+            ...latestBoard,
+            groups: latestBoard.groups
+              .map((grp) =>
+                grp.id === groupId
+                  ? {
+                      ...grp,
+                      ...updatedGroup,
+                      items: updatedGroup.items ?? grp.items,
+                    }
+                  : grp,
+              )
+              .sort((a, b) => a.position - b.position || a.id - b.id),
+          },
+        });
+      }
+      return updatedGroup;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'No se pudo actualizar el grupo.';
+      set({ activeBoard: previousBoard, error: message });
+      throw err;
+    }
+  },
+
+  deleteGroup: async (groupId: number) => {
+    const previousBoard = cloneBoard(get().activeBoard);
+    set({ error: null });
+
+    const currentBoard = get().activeBoard;
+    if (currentBoard) {
+      set({
+        activeBoard: {
+          ...currentBoard,
+          groups: currentBoard.groups.filter((grp) => grp.id !== groupId),
+        },
+      });
+    }
+
+    try {
+      await api.deleteTaskGroup(groupId);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'No se pudo eliminar el grupo.';
+      set({ activeBoard: previousBoard, error: message });
+      throw err;
+    }
+  },
+
+  createItem: async (groupId: number, payload: TaskItemCreate) => {
+    set({ error: null });
+    try {
+      const createdItem = await api.createTaskItem(groupId, payload);
+      const currentBoard = get().activeBoard;
+      if (currentBoard) {
+        set({
+          activeBoard: {
+            ...currentBoard,
+            groups: currentBoard.groups.map((grp) =>
+              grp.id === groupId
+                ? {
+                    ...grp,
+                    items: [...grp.items, createdItem].sort(
+                      (a, b) => a.position - b.position || a.id - b.id,
+                    ),
+                  }
+                : grp,
+            ),
+          },
+        });
+      }
+      return createdItem;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'No se pudo crear la tarea.';
+      set({ error: message });
+      throw err;
+    }
+  },
+
+  updateItem: async (
+    itemId: number,
+    payload: TaskItemUpdate,
+    optimisticAssignee?: UserRead | null,
+  ) => {
+    const previousBoard = cloneBoard(get().activeBoard);
+    set({ error: null });
+
+    const currentBoard = get().activeBoard;
+    if (currentBoard) {
+      let existingItem: TaskItemRead | undefined;
+      for (const grp of currentBoard.groups) {
+        const found = grp.items.find((i) => i.id === itemId);
+        if (found) {
+          existingItem = found;
+          break;
+        }
+      }
+
+      if (existingItem) {
+        const hasAssigneeField = Object.prototype.hasOwnProperty.call(
+          payload,
+          'assignee_id',
+        );
+        const hasDueDateField = Object.prototype.hasOwnProperty.call(
+          payload,
+          'due_date',
+        );
+
+        const nextAssigneeId = hasAssigneeField
+          ? (payload.assignee_id ?? null)
+          : existingItem.assignee_id;
+
+        const nextAssignee = hasAssigneeField
+          ? payload.assignee_id === null
+            ? null
+            : optimisticAssignee !== undefined
+              ? optimisticAssignee
+              : existingItem.assignee
+          : existingItem.assignee;
+
+        const nextGroupId =
+          payload.group_id !== undefined
+            ? payload.group_id
+            : existingItem.group_id;
+
+        const optimisticItem: TaskItemRead = {
+          ...existingItem,
+          title: payload.title !== undefined ? payload.title : existingItem.title,
+          group_id: nextGroupId,
+          status_key:
+            payload.status_key !== undefined
+              ? payload.status_key
+              : existingItem.status_key,
+          priority:
+            payload.priority !== undefined
+              ? payload.priority
+              : existingItem.priority,
+          assignee_id: nextAssigneeId,
+          assignee: nextAssignee,
+          due_date: hasDueDateField
+            ? (payload.due_date ?? null)
+            : existingItem.due_date,
+          notes:
+            payload.notes !== undefined ? payload.notes : existingItem.notes,
+          position:
+            payload.position !== undefined
+              ? payload.position
+              : existingItem.position,
+        };
+
+        const movedGroup = nextGroupId !== existingItem.group_id;
+
+        const nextGroups = currentBoard.groups.map((grp) => {
+          if (!movedGroup) {
+            if (grp.id !== existingItem!.group_id) return grp;
+            return {
+              ...grp,
+              items: grp.items.map((item) =>
+                item.id === itemId ? optimisticItem : item,
+              ),
+            };
+          }
+
+          if (grp.id === existingItem!.group_id) {
+            return {
+              ...grp,
+              items: grp.items.filter((item) => item.id !== itemId),
+            };
+          }
+          if (grp.id === nextGroupId) {
+            return {
+              ...grp,
+              items: [...grp.items, optimisticItem],
+            };
+          }
+          return grp;
+        });
+
+        set({
+          activeBoard: {
+            ...currentBoard,
+            groups: nextGroups,
+          },
+        });
+      }
+    }
+
+    try {
+      const updatedItem = await api.updateTaskItem(itemId, payload);
+      const latestBoard = get().activeBoard;
+      if (latestBoard) {
+        const nextGroups = latestBoard.groups.map((grp) => {
+          const withoutItem = grp.items.filter((item) => item.id !== itemId);
+          if (grp.id === updatedItem.group_id) {
+            return {
+              ...grp,
+              items: [...withoutItem, updatedItem].sort(
+                (a, b) => a.position - b.position || a.id - b.id,
+              ),
+            };
+          }
+          return {
+            ...grp,
+            items: withoutItem,
+          };
+        });
+
+        set({
+          activeBoard: {
+            ...latestBoard,
+            groups: nextGroups,
+          },
+        });
+      }
+      return updatedItem;
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'No se pudo actualizar la tarea.';
+      set({ activeBoard: previousBoard, error: message });
+      throw err;
+    }
+  },
+
+  deleteItem: async (itemId: number) => {
+    const previousBoard = cloneBoard(get().activeBoard);
+    set({ error: null });
+
+    const currentBoard = get().activeBoard;
+    if (currentBoard) {
+      set({
+        activeBoard: {
+          ...currentBoard,
+          groups: currentBoard.groups.map((grp) => ({
+            ...grp,
+            items: grp.items.filter((item) => item.id !== itemId),
+          })),
+        },
+      });
+    }
+
+    try {
+      await api.deleteTaskItem(itemId);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'No se pudo eliminar la tarea.';
+      set({ activeBoard: previousBoard, error: message });
       throw err;
     }
   },
@@ -482,4 +839,3 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       error: null,
     }),
 }));
-

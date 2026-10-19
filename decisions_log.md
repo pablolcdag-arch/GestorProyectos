@@ -61,3 +61,13 @@
 - **Razón:** Auditoría del Verificador de Backend con veredicto **APROBADO ✅** y 15/15 tests automatizados en `pytest` pasando al 100% (0 fallos).
 - **Impacto:** Backend del Sprint 2 completado. Se habilita el **Sprint 2B (Frontend: Vista Tabla Principal Interactiva con Edición Inline y Optimistic Updates)**.
 
+---
+
+## [19/10/2026] — Cierre y Aprobación del Sprint 2B (Frontend: Vista Tabla Principal Interactiva, CRUD de Grupos/Items y Edición Inline con Optimistic Updates)
+- **Decisión:**
+  1. Se aprueba e integra en `frontend/` la Vista Tabla Principal interactiva (`BoardView.tsx`) conectada a `useWorkspaceStore.ts` con clonación defensiva (`cloneBoard`), **Optimistic Updates** inmediatos y **rollback automático** ante errores de red/API.
+  2. Se valida el CRUD completo de Grupos (`+ Nuevo Grupo`, edición inline de nombre/color y eliminación), la fila rápida `+ Agregar tarea...` al pie de cada grupo y la edición inline con 1 clic de todas las celdas (Título, Notas, Responsable con opción `"Sin asignar"`, Estado dinámico, Prioridad, Fecha límite con alerta `"Vencida"`, movimiento entre grupos y eliminación de tarea).
+  3. Se añade `*.tsbuildinfo` a `.gitignore` para excluir cachés incrementales de TypeScript del control de versiones.
+- **Razón:** Auditoría del Verificador de Frontend con veredicto **APROBADO ✅**, 12/12 tests automatizados en `Vitest` (3 suites) pasando al 100% y build de producción limpio con 0 errores.
+- **Impacto:** Sprint 2 completado de punta a punta. Se inicia el **Sprint 3 (Actividad/Comentarios, Checklist por Tarea, Vista Kanban con Drag & Drop, Filtros en Vivo y Panel Lateral de Detalle / Item Drawer)**.
+

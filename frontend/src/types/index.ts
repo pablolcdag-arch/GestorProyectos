@@ -78,6 +78,41 @@ export interface DeleteBoardStatusResponse {
   reassigned_items_count: number;
 }
 
+export interface TaskGroupCreate {
+  title: string;
+  color?: string;
+  position?: number;
+  collapsed?: boolean;
+}
+
+export interface TaskGroupUpdate {
+  title?: string;
+  color?: string;
+  position?: number;
+  collapsed?: boolean;
+}
+
+export interface TaskItemCreate {
+  title: string;
+  status_key?: string;
+  priority?: string;
+  assignee_id?: number | null;
+  due_date?: string | null;
+  notes?: string;
+  position?: number;
+}
+
+export interface TaskItemUpdate {
+  title?: string;
+  group_id?: number;
+  status_key?: string;
+  priority?: string;
+  assignee_id?: number | null;
+  due_date?: string | null;
+  notes?: string;
+  position?: number;
+}
+
 export interface TaskItemRead {
   id: number;
   group_id: number;
@@ -206,4 +241,3 @@ export const MONDAY_COLOR_PALETTE: string[] = [
   '#784bd1', // Púrpura
   '#66ccff', // Celeste
 ];
-
