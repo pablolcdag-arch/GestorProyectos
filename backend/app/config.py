@@ -39,6 +39,7 @@ class Settings:
         "MICROSOFT_CLIENT_ID": "",
         "MICROSOFT_CLIENT_SECRET": "",
         "MICROSOFT_TENANT_ID": "common",
+        "CORS_ORIGINS": "*",
     }
 
     def __init__(self) -> None:

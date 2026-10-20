@@ -85,6 +85,21 @@ function extractFastApiDetail(payload: unknown, fallbackMessage: string): string
   return fallbackMessage;
 }
 
+export function resolveApiUrl(endpoint: string): string {
+  try {
+    const metaObj = import.meta as unknown as { env?: Record<string, string | undefined> };
+    const envBase = (typeof import.meta !== 'undefined' && metaObj.env?.VITE_API_BASE_URL) || '';
+    const cleanBase = String(envBase).trim().replace(/\/$/, '');
+    if (!cleanBase) {
+      return endpoint;
+    }
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    return `${cleanBase}${cleanEndpoint}`;
+  } catch {
+    return endpoint;
+  }
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {},
@@ -99,10 +114,12 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(endpoint, {
+  const url = resolveApiUrl(endpoint);
+  const response = await fetch(url, {
     ...options,
     headers,
   });
+
 
   let data: unknown = null;
   const contentType = response.headers?.get?.('content-type') || '';
@@ -237,10 +254,13 @@ export const api = {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`/api/boards/${boardId}/export.csv`, {
-      method: 'GET',
-      headers,
-    });
+    const response = await fetch(
+      resolveApiUrl(`/api/boards/${boardId}/export.csv`),
+      {
+        method: 'GET',
+        headers,
+      },
+    );
 
     if (!response.ok) {
       throw new ApiError(

@@ -40,17 +40,25 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+raw_cors = str(settings.CORS_ORIGINS).strip()
+if raw_cors == "*" or not raw_cors:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r".*",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    allowed_origins = [o.strip() for o in raw_cors.split(",") if o.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
 
 app.include_router(auth_router.router)
 app.include_router(workspaces_router.router)
