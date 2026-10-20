@@ -105,6 +105,16 @@ export const MicrosoftLogoSvg: React.FC<{ className?: string }> = ({
   </svg>
 );
 
+const getNormalizedRedirectUri = (): string => {
+  if (typeof window === 'undefined') return '';
+  const origin = window.location.origin;
+  const path = window.location.pathname;
+  if (!path || path === '/') {
+    return origin;
+  }
+  return `${origin}${path.replace(/\/+$/, '')}`;
+};
+
 export const LoginScreen: React.FC = () => {
   const {
     providers,
@@ -140,7 +150,7 @@ export const LoginScreen: React.FC = () => {
       window.history.replaceState({}, document.title, cleanUrl);
       void loginWithCallback(urlProvider, {
         code,
-        redirect_uri: window.location.origin + window.location.pathname,
+        redirect_uri: getNormalizedRedirectUri(),
       });
     }
   }, [loginWithCallback]);
@@ -163,7 +173,7 @@ export const LoginScreen: React.FC = () => {
       setSelectedProvider(provider);
       void startOAuthAuthorize(
         provider,
-        window.location.origin + window.location.pathname,
+        getNormalizedRedirectUri(),
       ).catch(() => {
         clearError();
       });
@@ -181,7 +191,7 @@ export const LoginScreen: React.FC = () => {
       sessionStorage.setItem('gestor_oauth_provider', provider);
       const res = await startOAuthAuthorize(
         provider,
-        window.location.origin + window.location.pathname,
+        getNormalizedRedirectUri(),
       );
       if (res.mode === 'dev_simulator') {
         setSelectedProvider(provider);

@@ -87,7 +87,7 @@ function extractFastApiDetail(payload: unknown, fallbackMessage: string): string
 
 export function resolveApiUrl(endpoint: string): string {
   try {
-    const envBase = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || '';
+    const envBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) || '';
     const cleanBase = String(envBase).trim().replace(/\/$/, '');
     if (!cleanBase) {
       return endpoint;
