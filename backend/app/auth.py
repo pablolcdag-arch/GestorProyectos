@@ -461,16 +461,15 @@ def ensure_user_default_workspace(db: Session, user: User) -> None:
             db.add(
                 BoardStatusConfig(
                     board_id=board.id,
-                    key=st["key"],
-                    label=st["label"],
-                    color=st["color"],
-                    order_index=st["order_index"],
-                    is_done=st["is_done"],
+                    key=str(st["key"]),
+                    label=str(st["label"]),
+                    color=str(st["color"]),
+                    position=int(st["position"]),
                 )
             )
 
-        grp1 = TaskGroup(board_id=board.id, title="Esta Semana", color="#579bfc", order_index=0)
-        grp2 = TaskGroup(board_id=board.id, title="Próximas Tareas", color="#a25ddc", order_index=1)
+        grp1 = TaskGroup(board_id=board.id, title="Esta Semana", color="#579bfc", position=0)
+        grp2 = TaskGroup(board_id=board.id, title="Próximas Tareas", color="#a25ddc", position=1)
         db.add_all([grp1, grp2])
 
         db.add_all([
