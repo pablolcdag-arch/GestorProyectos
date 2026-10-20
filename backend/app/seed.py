@@ -38,7 +38,11 @@ DEFAULT_BOARD_AUTOMATIONS: list[dict[str, str | bool]] = [
 
 
 def seed_initial_data(db: Session) -> None:
-    """Puebla la base de datos con el equipo inicial, workspaces y tableros si está vacía."""
+    """Puebla la base de datos con el equipo inicial, workspaces y tableros si está vacía y SEED_DEMO_DATA está activo."""
+    from app.config import settings
+    if not settings.SEED_DEMO_DATA:
+        return
+
     if db.query(User).count() > 0:
         dirty = False
         # Si la DB local fue creada en Sprints previos, asegurar semilla de colaboración si está vacía

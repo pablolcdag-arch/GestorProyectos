@@ -15,7 +15,15 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.models import User
+from app.models import (
+    DEFAULT_BOARD_STATUSES,
+    Board,
+    BoardAutomation,
+    BoardStatusConfig,
+    TaskGroup,
+    User,
+    Workspace,
+)
 from app.schemas import DevAccountInfo
 
 SUPPORTED_PROVIDERS = ("google", "microsoft")
@@ -421,7 +429,71 @@ def upsert_oauth_user(db: Session, provider: str, profile: dict[str, Any]) -> Us
 
     db.commit()
     db.refresh(user)
+    ensure_user_default_workspace(db, user)
     return user
+
+
+def ensure_user_default_workspace(db: Session, user: User) -> None:
+    """Asegura que un nuevo usuario posea al menos un Espacio de Trabajo limpio y un Tablero principal."""
+    total_ws = db.query(Workspace).count()
+    if total_ws == 0:
+        ws = Workspace(
+            name="Mi Espacio de Trabajo",
+            description="Espacio principal de gestión",
+            icon="Briefcase",
+            color="#0073ea",
+            owner_id=user.id,
+        )
+        db.add(ws)
+        db.commit()
+        db.refresh(ws)
+
+        board = Board(
+            name="Tablero Principal",
+            description="Gestioná tus tareas y proyectos visualmente",
+            workspace_id=ws.id,
+        )
+        db.add(board)
+        db.commit()
+        db.refresh(board)
+
+        for st in DEFAULT_BOARD_STATUSES:
+            db.add(
+                BoardStatusConfig(
+                    board_id=board.id,
+                    key=st["key"],
+                    label=st["label"],
+                    color=st["color"],
+                    order_index=st["order_index"],
+                    is_done=st["is_done"],
+                )
+            )
+
+        grp1 = TaskGroup(board_id=board.id, title="Esta Semana", color="#579bfc", order_index=0)
+        grp2 = TaskGroup(board_id=board.id, title="Próximas Tareas", color="#a25ddc", order_index=1)
+        db.add_all([grp1, grp2])
+
+        db.add_all([
+            BoardAutomation(
+                board_id=board.id,
+                rule_type="when_checklist_complete_set_status",
+                target_status_key="done",
+                is_active=True,
+            ),
+            BoardAutomation(
+                board_id=board.id,
+                rule_type="when_status_done_complete_checklist",
+                target_status_key="done",
+                is_active=True,
+            ),
+            BoardAutomation(
+                board_id=board.id,
+                rule_type="when_status_blocked_log_alert",
+                target_status_key="done",
+                is_active=True,
+            ),
+        ])
+        db.commit()
 
 
 def create_access_token(user: User) -> str:

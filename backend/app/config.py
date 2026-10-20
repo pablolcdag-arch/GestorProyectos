@@ -40,6 +40,7 @@ class Settings:
         "MICROSOFT_CLIENT_SECRET": "",
         "MICROSOFT_TENANT_ID": "common",
         "CORS_ORIGINS": "*",
+        "SEED_DEMO_DATA": True,
     }
 
     def __init__(self) -> None:
