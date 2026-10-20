@@ -106,3 +106,21 @@ Para garantizar la máxima calidad técnica, mantenibilidad y cero errores, el d
 - Cada feature nueva debe nacer acompañada de su script de prueba automatizado en `tests/` o `scripts/utils/`.
 - Antes de que el Verificador apruebe cualquier entrega, **todas las suites de pruebas del proyecto deben pasar con 100% de éxito (0 fallos)**.
 
+---
+
+## 🤝 Flujo de Trabajo Colaborativo (Equipo Humano y Ramas de Git)
+
+Para que múltiples desarrolladores o socios colaboren en el proyecto sin romper el entorno productivo:
+
+1. **Protección de la Rama Principal (`main`):**
+   - La rama `main` refleja el código productivo desplegado en Vercel y Render.
+   - **Prohibido hacer push directo a `main` en desarrollo:** Toda nueva funcionalidad o corrección debe nacer en una rama propia (ej: `feature/notificaciones`, `fix/calendario-responsive`).
+   - La integración a `main` se realiza mediante Pull Request (PR) únicamente tras haber completado el bucle SDD y verificado que el 100% de los tests pasan en verde.
+2. **Aislamiento de Entornos Locales:**
+   - En local, cada socio trabaja con su copia del repositorio, SQLite por defecto (`gestor.db`) y `AUTH_DEV_MODE=true`.
+   - **Nunca usar la cadena de conexión de producción (Supabase) en desarrollo local cotidiano**, para evitar que pruebas locales borren o modifiquen datos reales de clientes.
+3. **Uso Obligatorio de la Metodología SDD por Todos los Socios:**
+   - Si el socio programa asistido por IA, debe respetar estrictamente la separación de roles (Coordinador formula especificaciones, Implementador programa y testea, Verificador audita de forma independiente).
+   - Ningún agente en ninguna máquina tiene autorización para saltearse el bucle de verificación ni realizar commits sin auditoría previa.
+
+

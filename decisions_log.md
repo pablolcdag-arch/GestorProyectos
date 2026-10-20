@@ -110,5 +110,24 @@
 - **Razón:** Auditoría independiente de los Verificadores de Backend y Frontend con veredicto **APROBADO ✅** en ambos roles, 50 pruebas automatizadas locales pasando al 100% (**29 en Pytest + 21 en Vitest**) y build de producción de Vite limpio con 0 errores.
 - **Impacto:** **Gestor de Proyectos (Estilo Monday.com) Completado al 100% en sus 3 Fases.** Sistema robusto, ultra-rápido, visual y listo para despliegue productivo.
 
+---
+
+## [20/10/2026] — Despliegue en la Nube 100% Gratuito (Render + Supabase + Vercel) y Activación de Google OAuth2 en Producción
+- **Decisión:**
+  1. **Infraestructura Cloud ($0 Costo):**
+     - **Base de Datos:** Se migra la persistencia productiva a PostgreSQL alojado en Supabase (AWS us-east-1) utilizando el pooler Supavisor IPv4 (`aws-0-us-east-1.pooler.supabase.com:5432`) para compatibilidad total con redes IPv4 y evitar bloqueos de red en el Free Tier de Render.
+     - **Backend:** Se despliega FastAPI en Render Web Service (`https://gestor-proyectos-api-yek6.onrender.com`), incorporando el driver `psycopg[binary]>=3.1.18` para compatibilidad nativa con SQLAlchemy 2.1 sobre PostgreSQL.
+     - **Frontend:** Se despliega la SPA en Vercel (`https://gestor-proyectos-sandy.vercel.app`) configurando rewrites en `vercel.json` y horneando la URL de producción de la API en el bundle con defensas robustas contra respuestas no JSON.
+  2. **Google OAuth2 Federado en Producción:**
+     - Se crea y publica la pantalla de consentimiento de OAuth en Google Cloud Platform ("En producción", tipo externo, alcances `openid`, `email`, `profile`).
+     - Se configuran `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` en las variables de entorno de Render, desactivando el modo simulador (`AUTH_DEV_MODE=false`) y la precarga de datos de prueba (`SEED_DEMO_DATA=false`).
+     - Se normaliza la URL de redireccionamiento en el frontend (`getNormalizedRedirectUri`) para garantizar correspondencia exacta sin trailing slashes contra los URIs autorizados en Google Cloud Console.
+  3. **Onboarding Limpio y Base de Datos Prístina:**
+     - Se implementa `ensure_user_default_workspace` para aprovisionar automáticamente un Espacio de Trabajo ("Mi Espacio de Trabajo") y un Tablero ("Tablero Principal") con sus 5 estados y 2 grupos vacíos ante el primer login de un nuevo usuario autenticado por Google.
+     - Se purgan todas las cuentas y tareas semilla de prueba (`@gestor.dev`), dejando la base de datos de producción con 0 tareas demo, lista para uso de clientes reales.
+- **Razón:** Permitir que clientes e interesados prueben la aplicación online de forma inmediata, segura, sin costos de hosting y con sus cuentas reales de Google, ingresando a un tablero limpio y operativo sin tareas ficticias de ejemplo.
+- **Impacto:** Sistema productivo en vivo, accesible en todo el mundo, con ciclo de vida de autenticación real y base de datos relacional PostgreSQL en la nube.
+
+
 
 
