@@ -148,7 +148,9 @@ export const LoginScreen: React.FC = () => {
   const getProviderConfig = (
     provider: AuthProvider,
   ): OAuthProviderConfig | undefined =>
-    providers.find((p) => p.provider.toLowerCase() === provider);
+    Array.isArray(providers)
+      ? providers.find((p) => p.provider.toLowerCase() === provider)
+      : undefined;
 
   const handleProviderClick = async (provider: AuthProvider) => {
     clearError();
@@ -235,11 +237,12 @@ export const LoginScreen: React.FC = () => {
       : DEFAULT_DEV_ACCOUNTS[selectedProvider]
     : [];
 
-  const googleConfig = getProviderConfig('google');
-  const microsoftConfig = getProviderConfig('microsoft');
+  const safeProviders = Array.isArray(providers) ? providers : [];
+  const googleConfig = safeProviders.find((p) => p.provider.toLowerCase() === 'google');
+  const microsoftConfig = safeProviders.find((p) => p.provider.toLowerCase() === 'microsoft');
   const isDevEnvironment =
-    !providers.length ||
-    providers.some((p) => p.mode === 'dev_simulator');
+    !safeProviders.length ||
+    safeProviders.some((p) => p.mode === 'dev_simulator');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f5f6f8] via-[#eef2ff] to-[#e6f4ff] flex flex-col justify-center items-center px-4 py-10">

@@ -49,7 +49,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   loadProviders: async () => {
     try {
-      const providers = await api.getAuthProviders();
+      const res = await api.getAuthProviders();
+      const providers = Array.isArray(res) ? res : [];
       set({ providers });
       return providers;
     } catch (err) {
@@ -57,7 +58,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         err instanceof Error
           ? err.message
           : 'No se pudieron cargar los proveedores de autenticación.';
-      set({ error: message });
+      set({ providers: [], error: message });
       return [];
     }
   },

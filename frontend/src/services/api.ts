@@ -87,8 +87,7 @@ function extractFastApiDetail(payload: unknown, fallbackMessage: string): string
 
 export function resolveApiUrl(endpoint: string): string {
   try {
-    const metaObj = import.meta as unknown as { env?: Record<string, string | undefined> };
-    const envBase = (typeof import.meta !== 'undefined' && metaObj.env?.VITE_API_BASE_URL) || '';
+    const envBase = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || '';
     const cleanBase = String(envBase).trim().replace(/\/$/, '');
     if (!cleanBase) {
       return endpoint;
@@ -123,7 +122,7 @@ async function request<T>(
 
   let data: unknown = null;
   const contentType = response.headers?.get?.('content-type') || '';
-  if (contentType.includes('application/json') || response.status !== 204) {
+  if (contentType.includes('application/json')) {
     try {
       data = await response.json();
     } catch {
@@ -131,7 +130,7 @@ async function request<T>(
     }
   }
 
-  if (!response.ok) {
+  if (!response.ok || (contentType && !contentType.includes('application/json') && response.status !== 204)) {
     const errorMessage = extractFastApiDetail(
       data,
       `Error HTTP ${response.status} al consultar ${endpoint}`,
