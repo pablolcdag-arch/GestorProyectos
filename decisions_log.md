@@ -128,6 +128,29 @@
 - **Razón:** Permitir que clientes e interesados prueben la aplicación online de forma inmediata, segura, sin costos de hosting y con sus cuentas reales de Google, ingresando a un tablero limpio y operativo sin tareas ficticias de ejemplo.
 - **Impacto:** Sistema productivo en vivo, accesible en todo el mundo, con ciclo de vida de autenticación real y base de datos relacional PostgreSQL en la nube.
 
+---
+
+## [26/10/2026] — Sprint 1: Integración de Design Tokens Oficiales, Tipografía Figtree y Celdas Pixel-Perfect (Fidelidad 1:1 Monday.com)
+- **Decisión:**
+  1. **Tipografía Oficial Figtree:**
+     - Se integra la tipografía `Figtree` (pesos 300 a 700) desde Google Fonts con preconnect en `frontend/index.html` y se configura en `frontend/src/index.css` y `frontend/tailwind.config.js`.
+  2. **Geometría y Styling de Filas y Celdas (36px):**
+     - Altura de fila estricta de `36px` (`h-9 min-h-[36px] max-h-[36px] leading-[36px]`).
+     - Borde de celda Monday.com exacto: `1px solid #d0d4e4` (`border-[#d0d4e4]`).
+     - Hover de fila `#f6f7fb`, foco de celda `#0073ea` sin saltos de layout y texto en `#323338` / `#676879`.
+     - Borde de acento de grupo de `4px solid <color_grupo>`.
+  3. **Anchos de Columna Específicos:**
+     - Checkbox: `w-10 min-w-[40px] max-w-[40px]`.
+     - Tarea Sticky: `w-[331px] min-w-[331px] sticky left-10`.
+     - Responsable: `w-[98px] min-w-[98px]`.
+     - Estado: `w-[134px] min-w-[134px]`.
+     - Métricas / Prioridad / Presupuesto: `w-[140px] min-w-[140px]`.
+  4. **Blindaje Metodológico SDD (1-Clic y Resumen Conciso):**
+     - Se actualiza `.agents/AGENTS.md` formalizando la entrega obligatoria de reportes dentro de un único bloque de código Markdown para copia y transferencia con 1 solo clic.
+- **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.68s, 24/24 tests en Vitest y 29/29 tests en Pytest pasando al 100% (53 tests en verde sin regresiones).
+- **Impacto:** La tabla principal alcanza paridad estética y geométrica inmediata con Monday.com, sentando las bases visuales para los componentes avanzados de los siguientes sprints.
+
+
 
 
 

@@ -61,13 +61,21 @@ Para garantizar la máxima calidad técnica, mantenibilidad y cero errores, el d
 
 ### 2. El Implementador (Frontend / Backend)
 - **Responsabilidad:** Recibir la especificación técnica del Coordinador, programar el código de forma limpia, defensiva y modular, y crear/actualizar las pruebas unitarias e integrales asociadas.
-- **Prohibición Estricta:** NUNCA ejecuta `git commit`, `git push` ni despliegues. Al finalizar, reporta los archivos modificados, el resumen de lo realizado y la salida de los tests locales.
+- **Prohibición Estricta:** NUNCA ejecuta `git commit`, `git push` ni despliegues.
+- **Entrega Obligatoria al Coordinador (Formato 1-Clic):** Al finalizar su trabajo, el Implementador DEBE entregar su reporte **dentro de un único bloque de código Markdown (```markdown ... ```)** para que el usuario pueda copiarlo y pegarlo al Coordinador con 1 solo clic. El resumen debe ser directo y conciso conteniendo:
+  1. **Resumen de Cambios:** Qué se construyó y qué decisiones de implementación se tomaron.
+  2. **Archivos Creados y Modificados:** Rutas exactas relativas al proyecto.
+  3. **Resultado de Pruebas Locales:** Comandos ejecutados y salida verificable de los tests (debe ser 100% de éxito).
+  4. **Notas para Verificación:** Puntos críticos a auditar por el Verificador.
 
 ### 3. El Verificador (Frontend / Backend / QA)
-- **Responsabilidad:** Actuar como auditor técnico independiente. Revisa el código implementado contra los principios de arquitectura, verifica que no existan callejones sin salida (dead-ends), fallos de responsive ni regresiones, y corre la suite completa de pruebas.
-- **Veredicto Obligatorio:** Emite un informe estructurado con veredicto explícito:
-  - **APROBADO ✅:** Autoriza al Coordinador a proceder con el commit y eventual despliegue.
-  - **RECHAZADO ❌:** Detalla los fallos encontrados para que el Coordinador los derive al Implementador.
+- **Responsabilidad:** Actuar como auditor técnico independiente en su propia conversación separada. Revisa el código implementado contra los principios de arquitectura, verifica que no existan callejones sin salida (dead-ends), fallos de responsive ni regresiones, y corre la suite completa de pruebas del proyecto.
+- **Entrega Obligatoria al Coordinador (Formato 1-Clic y Resumen Corto):** Emite su veredicto final **dentro de un único bloque de código Markdown (```markdown ... ```)** para que el usuario pueda transferirlo al Coordinador con 1 solo clic. Debe ser sintético y directo al grano:
+  - **Veredicto Explícito:**
+    - **APROBADO ✅:** Autoriza al Coordinador a proceder con el commit, bitácora en `decisions_log.md` y eventual despliegue.
+    - **RECHAZADO ❌:** Detalla puntualmente los fallos encontrados, errores de tests o discrepancias para que el Coordinador los derive al Implementador.
+  - **Resumen Ejecutivo Breve:** Breve síntesis (máximo 1 o 2 párrafos) con el resultado de la matriz de control (responsive, UX, modularidad).
+  - **Evidencia de Pruebas:** Comandos y resultados exactos de `pytest` (backend) y `vitest` (frontend).
 
 ---
 

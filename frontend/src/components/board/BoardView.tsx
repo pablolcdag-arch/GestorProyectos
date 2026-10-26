@@ -362,7 +362,10 @@ export const BoardView: React.FC = () => {
   };
 
   return (
-    <main className="flex-1 overflow-y-auto bg-white p-6 space-y-6">
+    <main
+      data-testid="board-main-container"
+      className="flex-1 overflow-y-auto bg-white p-6 space-y-6 font-sans font-['Figtree',Roboto,-apple-system,BlinkMacSystemFont,sans-serif]"
+    >
       {/* Banner de Error Descartable (Optimistic Rollback Feedback) */}
       {error && (
         <div
@@ -822,41 +825,69 @@ export const BoardView: React.FC = () => {
                 {/* Tabla de Filas (Items) estilo Monday Work OS */}
                 {!group.collapsed && (
                   <div
-                    className="rounded-xl border border-gray-200 overflow-hidden shadow-2xs bg-white"
+                    className="rounded-xl border border-[#d0d4e4] overflow-hidden shadow-2xs bg-white"
                     style={{
-                      borderLeftWidth: '6px',
+                      borderLeftWidth: '4px',
                       borderLeftColor: group.color,
                     }}
                   >
                     <div className="overflow-x-auto">
-                      <table className="w-full border-collapse text-left">
+                      <table className="w-full border-collapse text-left font-sans">
                         <thead>
-                          <tr className="bg-[#f7f8fa] border-b border-gray-200 text-[11px] font-bold uppercase tracking-wider text-[#676879]">
-                            <th className="py-2.5 px-4 min-w-[270px]">Tarea</th>
-                            <th className="py-2.5 px-3 w-48 text-center border-l border-gray-200">
+                          <tr className="bg-[#f7f8fa] border-b border-[#d0d4e4] text-[11px] font-bold uppercase tracking-wider text-[#676879] h-9 min-h-[36px] max-h-[36px] leading-[36px]">
+                            {/* Columna 0: Checkbox y menú lateral de fila */}
+                            <th className="w-10 min-w-[40px] max-w-[40px] h-9 min-h-[36px] max-h-[36px] p-0 text-center border-r border-[#d0d4e4] bg-[#f7f8fa]">
+                              <div className="flex items-center justify-center h-full">
+                                <input
+                                  type="checkbox"
+                                  aria-label="Seleccionar todas las tareas"
+                                  className="w-3.5 h-3.5 rounded border-[#d0d4e4] text-[#0073ea] focus:ring-[#0073ea] cursor-pointer"
+                                />
+                              </div>
+                            </th>
+
+                            {/* Columna 1: Nombre de Tarea (Sticky) */}
+                            <th className="w-[331px] min-w-[331px] h-9 min-h-[36px] max-h-[36px] px-3 text-left border-r border-[#d0d4e4] sticky left-10 z-10 bg-[#f7f8fa] truncate">
+                              Tarea
+                            </th>
+
+                            {/* Columna 2: Responsable */}
+                            <th className="w-[98px] min-w-[98px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
                               Responsable
                             </th>
-                            <th className="py-2.5 px-3 w-40 text-center border-l border-gray-200">
+
+                            {/* Columna 3: Estado */}
+                            <th className="w-[134px] min-w-[134px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
                               Estado
                             </th>
-                            <th className="py-2.5 px-3 w-32 text-center border-l border-gray-200">
+
+                            {/* Columna 4: Prioridad */}
+                            <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
                               Prioridad
                             </th>
-                            <th className="py-2.5 px-3 w-40 text-center border-l border-gray-200">
+
+                            {/* Columna 5: Fecha límite */}
+                            <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
                               Fecha límite
                             </th>
-                            <th className="py-2.5 px-3 w-28 text-center border-l border-gray-200">
+
+                            {/* Columna 6: Horas */}
+                            <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
                               Horas
                             </th>
-                            <th className="py-2.5 px-3 w-36 text-center border-l border-gray-200">
+
+                            {/* Columna 7: Presupuesto */}
+                            <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
                               Presupuesto
                             </th>
-                            <th className="py-2.5 px-3 w-44 text-center border-l border-gray-200">
+
+                            {/* Columna 8: Acciones */}
+                            <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
                               Acciones
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200 text-sm">
+                        <tbody className="divide-y divide-[#d0d4e4] text-xs">
                           {visibleItems.map((item) => {
                             const statusCfg = statusMap.get(item.status_key);
                             const statusLabel =
@@ -887,12 +918,23 @@ export const BoardView: React.FC = () => {
                               <tr
                                 key={item.id}
                                 data-testid={`task-row-${item.id}`}
-                                className="hover:bg-[#f5f9ff] transition-colors"
+                                className="h-9 min-h-[36px] max-h-[36px] leading-[36px] border-b border-[#d0d4e4] hover:bg-[#f6f7fb] transition-colors group/row"
                               >
-                                {/* Columna 1: Tarea (Edición inline + botón para abrir ItemDetailDrawer) */}
-                                <td className="py-2.5 px-4">
+                                {/* Checkbox y menú lateral de fila */}
+                                <td className="w-10 min-w-[40px] max-w-[40px] h-9 min-h-[36px] max-h-[36px] border-r border-[#d0d4e4] p-0 text-center bg-white group-hover/row:bg-[#f6f7fb]">
+                                  <div className="flex items-center justify-center h-full">
+                                    <input
+                                      type="checkbox"
+                                      aria-label={`Seleccionar tarea ${item.title}`}
+                                      className="w-3.5 h-3.5 rounded border-[#d0d4e4] text-[#0073ea] focus:ring-[#0073ea] cursor-pointer"
+                                    />
+                                  </div>
+                                </td>
+
+                                {/* Columna 1: Tarea (Sticky) */}
+                                <td className="w-[331px] min-w-[331px] h-9 min-h-[36px] max-h-[36px] px-3 border-r border-[#d0d4e4] sticky left-10 z-10 bg-white group-hover/row:bg-[#f6f7fb] focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
                                   {isEditingThisItem ? (
-                                    <div className="space-y-1.5">
+                                    <div className="flex items-center gap-1.5 h-full">
                                       <input
                                         type="text"
                                         data-testid={`task-title-input-${item.id}`}
@@ -909,66 +951,62 @@ export const BoardView: React.FC = () => {
                                             setEditingItemId(null);
                                           }
                                         }}
-                                        className="w-full px-2.5 py-1 text-sm font-medium rounded-lg border border-[#0073ea] bg-white focus:outline-none"
+                                        className="flex-1 h-7 px-2 text-xs font-medium rounded border border-[#0073ea] ring-1 ring-[#0073ea] bg-white focus:outline-none"
                                         autoFocus
                                       />
-                                      <div className="flex items-center gap-1.5">
-                                        <input
-                                          type="text"
-                                          data-testid={`task-notes-input-${item.id}`}
-                                          aria-label={`Editar notas de tarea ${item.id}`}
-                                          placeholder="Notas rápidas..."
-                                          value={draftItemNotes}
-                                          onChange={(e) =>
-                                            setDraftItemNotes(e.target.value)
+                                      <input
+                                        type="text"
+                                        data-testid={`task-notes-input-${item.id}`}
+                                        aria-label={`Editar notas de tarea ${item.id}`}
+                                        placeholder="Notas..."
+                                        value={draftItemNotes}
+                                        onChange={(e) =>
+                                          setDraftItemNotes(e.target.value)
+                                        }
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            void handleSaveItemText(item.id);
                                           }
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                              e.preventDefault();
-                                              void handleSaveItemText(item.id);
-                                            }
-                                          }}
-                                          className="flex-1 px-2.5 py-1 text-xs rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-[#0073ea]"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            void handleSaveItemText(item.id)
-                                          }
-                                          data-testid={`task-title-save-${item.id}`}
-                                          className="px-2.5 py-1 rounded-md bg-[#0073ea] text-white text-xs font-semibold cursor-pointer"
-                                        >
-                                          Guardar
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => setEditingItemId(null)}
-                                          className="px-2 py-1 rounded-md text-xs text-[#676879] hover:bg-gray-100 cursor-pointer"
-                                        >
-                                          Cancelar
-                                        </button>
-                                      </div>
+                                        }}
+                                        className="w-24 h-7 px-2 text-xs rounded border border-[#d0d4e4] bg-white focus:outline-none focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea]"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          void handleSaveItemText(item.id)
+                                        }
+                                        data-testid={`task-title-save-${item.id}`}
+                                        className="px-2 h-7 rounded bg-[#0073ea] text-white text-xs font-semibold cursor-pointer shrink-0"
+                                      >
+                                        Guardar
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingItemId(null)}
+                                        className="px-1.5 h-7 rounded text-xs text-[#676879] hover:bg-gray-100 cursor-pointer shrink-0"
+                                      >
+                                        Cancelar
+                                      </button>
                                     </div>
                                   ) : (
-                                    <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center justify-between gap-2 h-full">
                                       <div
                                         data-testid={`task-title-display-${item.id}`}
                                         onClick={() =>
                                           handleStartEditItemText(item)
                                         }
-                                        className="group/title flex-1 min-w-0 cursor-pointer rounded-md -mx-1.5 px-1.5 py-0.5 hover:bg-white/90 transition-colors"
+                                        className="group/title flex-1 min-w-0 cursor-pointer rounded -mx-1 px-1 py-0.5 hover:bg-white/90 transition-colors flex items-center gap-1.5"
                                         title="Clic para editar título o notas"
                                       >
-                                        <div className="flex items-center gap-1.5">
-                                          <span className="font-medium text-[#323338] group-hover/title:text-[#0073ea] transition-colors">
-                                            {item.title}
-                                          </span>
-                                          <Edit2 className="w-3 h-3 text-gray-400 opacity-0 group-hover/title:opacity-100 shrink-0" />
-                                        </div>
+                                        <span className="font-medium text-[#323338] group-hover/title:text-[#0073ea] transition-colors truncate text-xs">
+                                          {item.title}
+                                        </span>
+                                        <Edit2 className="w-3 h-3 text-gray-400 opacity-0 group-hover/title:opacity-100 shrink-0" />
                                         {item.notes && (
-                                          <div className="text-xs text-[#676879] mt-0.5 line-clamp-1">
-                                            {item.notes}
-                                          </div>
+                                          <span className="text-[11px] text-[#676879] truncate max-w-[90px]">
+                                            — {item.notes}
+                                          </span>
                                         )}
                                       </div>
 
@@ -981,27 +1019,27 @@ export const BoardView: React.FC = () => {
                                         data-testid={`btn-open-drawer-${item.id}`}
                                         aria-label={`Abrir panel de colaboración de ${item.title}`}
                                         title="Comentarios, Checklist y Actividad"
-                                        className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border border-gray-200 bg-white hover:border-[#0073ea] hover:text-[#0073ea] text-xs font-semibold text-[#676879] transition-colors cursor-pointer shrink-0"
+                                        className="inline-flex items-center gap-1.5 px-2 h-6 rounded border border-[#d0d4e4] bg-white hover:border-[#0073ea] hover:text-[#0073ea] text-[11px] font-semibold text-[#676879] transition-colors cursor-pointer shrink-0"
                                       >
                                         {checklistTotal > 0 && (
                                           <span
                                             data-testid={`task-checklist-badge-${item.id}`}
-                                            className={`inline-flex items-center gap-1 ${
+                                            className={`inline-flex items-center gap-0.5 ${
                                               checklistCompleted ===
                                               checklistTotal
                                                 ? 'text-[#00c875]'
                                                 : ''
                                             }`}
                                           >
-                                            <CheckSquare className="w-3.5 h-3.5" />
+                                            <CheckSquare className="w-3 h-3" />
                                             <span>
                                               {checklistCompleted}/
                                               {checklistTotal}
                                             </span>
                                           </span>
                                         )}
-                                        <span className="inline-flex items-center gap-1">
-                                          <MessageSquare className="w-3.5 h-3.5" />
+                                        <span className="inline-flex items-center gap-0.5">
+                                          <MessageSquare className="w-3 h-3" />
                                           <span
                                             data-testid={`task-comments-count-${item.id}`}
                                           >
@@ -1013,22 +1051,23 @@ export const BoardView: React.FC = () => {
                                   )}
                                 </td>
 
-                                {/* Columna 2: Responsable (Selector Inline) */}
-                                <td className="py-2 px-3 border-l border-gray-100">
-                                  <div className="flex items-center gap-2">
+                                {/* Columna 2: Responsable */}
+                                <td className="w-[98px] min-w-[98px] h-9 min-h-[36px] max-h-[36px] px-1.5 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                  <div className="flex items-center justify-center gap-1 h-full">
                                     {item.assignee ? (
                                       <span
-                                        className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-2xs"
+                                        className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 shadow-2xs"
                                         style={{
                                           backgroundColor:
                                             item.assignee.color || '#0073ea',
                                         }}
+                                        title={item.assignee.full_name}
                                       >
                                         {getInitials(item.assignee.full_name)}
                                       </span>
                                     ) : (
-                                      <span className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shrink-0">
-                                        <UserIcon className="w-3.5 h-3.5" />
+                                      <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shrink-0">
+                                        <UserIcon className="w-3 h-3" />
                                       </span>
                                     )}
 
@@ -1062,7 +1101,7 @@ export const BoardView: React.FC = () => {
                                           );
                                         }
                                       }}
-                                      className="flex-1 min-w-0 text-xs font-medium text-[#323338] bg-transparent border border-transparent hover:border-gray-300 focus:border-[#0073ea] rounded-md px-1.5 py-1 focus:outline-none cursor-pointer truncate"
+                                      className="flex-1 min-w-0 text-[11px] font-medium text-[#323338] bg-transparent border border-transparent hover:border-[#d0d4e4] focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] rounded px-1 py-0.5 focus:outline-none cursor-pointer truncate"
                                     >
                                       <option value="">Sin asignar</option>
                                       {availableUsers.map((u) => (
@@ -1074,12 +1113,12 @@ export const BoardView: React.FC = () => {
                                   </div>
                                 </td>
 
-                                {/* Columna 3: Estado (Píldora Monday Interactiva) */}
-                                <td className="p-1.5 border-l border-gray-100">
-                                  <div className="relative w-full">
+                                {/* Columna 3: Estado */}
+                                <td className="w-[134px] min-w-[134px] h-9 min-h-[36px] max-h-[36px] p-0.5 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                  <div className="relative w-full h-full flex items-center justify-center">
                                     <div
                                       data-testid={`task-status-badge-${item.id}`}
-                                      className="w-full py-2 px-3 rounded-md text-center text-xs font-semibold text-white shadow-2xs truncate pointer-events-none"
+                                      className="w-full h-7 rounded text-center text-xs font-semibold text-white shadow-2xs truncate flex items-center justify-center px-2 pointer-events-none"
                                       style={{ backgroundColor: statusColor }}
                                     >
                                       {statusLabel}
@@ -1104,12 +1143,12 @@ export const BoardView: React.FC = () => {
                                   </div>
                                 </td>
 
-                                {/* Columna 4: Prioridad (Píldora Interactiva) */}
-                                <td className="p-1.5 border-l border-gray-100">
-                                  <div className="relative w-full">
+                                {/* Columna 4: Prioridad */}
+                                <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] p-0.5 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                  <div className="relative w-full h-full flex items-center justify-center">
                                     <div
                                       data-testid={`task-priority-badge-${item.id}`}
-                                      className="w-full py-2 px-3 rounded-md text-center text-xs font-semibold shadow-2xs pointer-events-none"
+                                      className="w-full h-7 rounded text-center text-xs font-semibold shadow-2xs truncate flex items-center justify-center px-2 pointer-events-none"
                                       style={{
                                         backgroundColor: priorityMeta.bgColor,
                                         color: priorityMeta.textColor,
@@ -1136,54 +1175,52 @@ export const BoardView: React.FC = () => {
                                   </div>
                                 </td>
 
-                                {/* Columna 5: Fecha límite Inline + Alerta de vencimiento */}
-                                <td className="py-2 px-3 border-l border-gray-100 text-center">
-                                  <div className="flex flex-col items-center gap-1">
-                                    <div className="inline-flex items-center gap-1">
-                                      <Calendar
-                                        className={`w-3.5 h-3.5 shrink-0 ${
-                                          isOverdue
-                                            ? 'text-[#e2445c]'
-                                            : 'text-[#0073ea]'
-                                        }`}
-                                      />
-                                      <input
-                                        type="date"
-                                        data-testid={`task-duedate-input-${item.id}`}
-                                        aria-label={`Fecha límite de ${item.title}`}
-                                        value={item.due_date ?? ''}
-                                        onChange={(e) =>
+                                {/* Columna 5: Fecha límite */}
+                                <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-1 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                  <div className="flex items-center justify-center gap-1 h-full">
+                                    <Calendar
+                                      className={`w-3 h-3 shrink-0 ${
+                                        isOverdue
+                                          ? 'text-[#e2445c]'
+                                          : 'text-[#0073ea]'
+                                      }`}
+                                    />
+                                    <input
+                                      type="date"
+                                      data-testid={`task-duedate-input-${item.id}`}
+                                      aria-label={`Fecha límite de ${item.title}`}
+                                      value={item.due_date ?? ''}
+                                      onChange={(e) =>
+                                        void handleInlineUpdate(item.id, {
+                                          due_date: e.target.value || null,
+                                        })
+                                      }
+                                      className={`text-[11px] font-medium rounded px-1 h-6 border border-transparent hover:border-[#d0d4e4] focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] focus:outline-none cursor-pointer ${
+                                        isOverdue
+                                          ? 'text-[#e2445c] font-semibold bg-red-50'
+                                          : 'text-[#323338] bg-transparent'
+                                      }`}
+                                    />
+                                    {item.due_date && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
                                           void handleInlineUpdate(item.id, {
-                                            due_date: e.target.value || null,
+                                            due_date: null,
                                           })
                                         }
-                                        className={`text-xs font-medium rounded-md px-1.5 py-0.5 border border-transparent hover:border-gray-300 focus:border-[#0073ea] focus:outline-none cursor-pointer ${
-                                          isOverdue
-                                            ? 'text-[#e2445c] font-semibold bg-red-50'
-                                            : 'text-[#323338] bg-gray-100'
-                                        }`}
-                                      />
-                                      {item.due_date && (
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            void handleInlineUpdate(item.id, {
-                                              due_date: null,
-                                            })
-                                          }
-                                          data-testid={`task-duedate-clear-${item.id}`}
-                                          aria-label={`Limpiar fecha de ${item.title}`}
-                                          title="Limpiar fecha límite"
-                                          className="p-0.5 rounded hover:bg-gray-200 text-gray-500 hover:text-[#323338] cursor-pointer"
-                                        >
-                                          <X className="w-3 h-3" />
-                                        </button>
-                                      )}
-                                    </div>
+                                        data-testid={`task-duedate-clear-${item.id}`}
+                                        aria-label={`Limpiar fecha de ${item.title}`}
+                                        title="Limpiar fecha límite"
+                                        className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-[#323338] cursor-pointer"
+                                      >
+                                        <X className="w-2.5 h-2.5" />
+                                      </button>
+                                    )}
                                     {isOverdue && (
                                       <span
                                         data-testid={`task-overdue-badge-${item.id}`}
-                                        className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-red-100 text-[#e2445c] text-[10px] font-bold"
+                                        className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded bg-red-100 text-[#e2445c] text-[9px] font-bold"
                                       >
                                         <AlertTriangle className="w-2.5 h-2.5" />
                                         <span>Vencida</span>
@@ -1192,9 +1229,9 @@ export const BoardView: React.FC = () => {
                                   </div>
                                 </td>
 
-                                {/* Columna 6: Horas Estimadas Editable Inline */}
-                                <td className="py-2 px-2.5 border-l border-gray-100 text-center">
-                                  <div className="inline-flex items-center gap-1">
+                                {/* Columna 6: Horas */}
+                                <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                  <div className="inline-flex items-center justify-center gap-1 h-full">
                                     <input
                                       type="number"
                                       min="0"
@@ -1210,7 +1247,7 @@ export const BoardView: React.FC = () => {
                                           });
                                         }
                                       }}
-                                      className="w-16 text-right text-xs font-semibold text-[#323338] bg-gray-50 border border-gray-200 rounded-md px-1.5 py-1 focus:outline-none focus:border-[#0073ea]"
+                                      className="w-16 h-7 text-right text-xs font-semibold text-[#323338] bg-transparent border border-transparent hover:border-[#d0d4e4] focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] rounded px-1.5 focus:outline-none"
                                     />
                                     <span className="text-[11px] font-medium text-[#676879]">
                                       h
@@ -1218,9 +1255,9 @@ export const BoardView: React.FC = () => {
                                   </div>
                                 </td>
 
-                                {/* Columna 7: Presupuesto Editable Inline */}
-                                <td className="py-2 px-2.5 border-l border-gray-100 text-center">
-                                  <div className="inline-flex items-center gap-1">
+                                {/* Columna 7: Presupuesto */}
+                                <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                  <div className="inline-flex items-center justify-center gap-1 h-full">
                                     <span className="text-[11px] font-semibold text-[#676879]">
                                       $
                                     </span>
@@ -1239,14 +1276,14 @@ export const BoardView: React.FC = () => {
                                           });
                                         }
                                       }}
-                                      className="w-20 text-right text-xs font-semibold text-[#323338] bg-gray-50 border border-gray-200 rounded-md px-1.5 py-1 focus:outline-none focus:border-[#0073ea]"
+                                      className="w-20 h-7 text-right text-xs font-semibold text-[#323338] bg-transparent border border-transparent hover:border-[#d0d4e4] focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] rounded px-1.5 focus:outline-none"
                                     />
                                   </div>
                                 </td>
 
-                                {/* Columna 8: Acciones de Fila (Mover de grupo, Duplicar y Eliminar) */}
-                                <td className="py-2 px-2.5 border-l border-gray-100 text-center">
-                                  <div className="flex items-center justify-center gap-1">
+                                {/* Columna 8: Acciones */}
+                                <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-1 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                  <div className="flex items-center justify-center gap-1 h-full">
                                     {activeBoard.groups.length > 1 && (
                                       <select
                                         data-testid={`task-move-group-select-${item.id}`}
@@ -1258,14 +1295,14 @@ export const BoardView: React.FC = () => {
                                           })
                                         }
                                         title="Mover a otro grupo"
-                                        className="max-w-[86px] text-[11px] text-[#676879] bg-gray-50 border border-gray-200 rounded-md px-1.5 py-1 focus:outline-none focus:border-[#0073ea] cursor-pointer truncate"
+                                        className="max-w-[76px] h-6 text-[10px] text-[#676879] bg-gray-50 border border-[#d0d4e4] rounded px-1 focus:outline-none focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] cursor-pointer truncate"
                                       >
                                         {activeBoard.groups.map((g) => (
                                           <option
                                             key={g.id}
                                             value={String(g.id)}
                                           >
-                                            Mover a: {g.title}
+                                            Mover: {g.title}
                                           </option>
                                         ))}
                                       </select>
@@ -1279,7 +1316,7 @@ export const BoardView: React.FC = () => {
                                       data-testid={`btn-duplicate-task-${item.id}`}
                                       aria-label={`Duplicar tarea ${item.title}`}
                                       title="Duplicar tarea"
-                                      className="p-1.5 rounded-md text-[#676879] hover:text-[#0073ea] hover:bg-[#e6f1fd] transition-colors cursor-pointer"
+                                      className="p-1 rounded text-[#676879] hover:text-[#0073ea] hover:bg-[#e6f1fd] transition-colors cursor-pointer"
                                     >
                                       <Copy className="w-3.5 h-3.5" />
                                     </button>
@@ -1292,7 +1329,7 @@ export const BoardView: React.FC = () => {
                                       data-testid={`btn-delete-task-${item.id}`}
                                       aria-label={`Eliminar tarea ${item.title}`}
                                       title="Eliminar tarea"
-                                      className="p-1.5 rounded-md text-[#676879] hover:text-[#e2445c] hover:bg-red-50 transition-colors cursor-pointer"
+                                      className="p-1 rounded text-[#676879] hover:text-[#e2445c] hover:bg-red-50 transition-colors cursor-pointer"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -1303,10 +1340,10 @@ export const BoardView: React.FC = () => {
                           })}
 
                           {visibleItems.length === 0 && (
-                            <tr>
+                            <tr className="h-9 min-h-[36px] max-h-[36px] border-b border-[#d0d4e4]">
                               <td
-                                colSpan={8}
-                                className="py-4 px-4 text-center text-xs text-[#676879] italic"
+                                colSpan={9}
+                                className="h-9 min-h-[36px] max-h-[36px] py-1 px-4 text-center text-xs text-[#676879] italic border-r border-[#d0d4e4]"
                               >
                                 {hasActiveFilters
                                   ? 'No hay tareas que coincidan con los filtros aplicados en este grupo.'
@@ -1316,10 +1353,13 @@ export const BoardView: React.FC = () => {
                           )}
 
                           {/* Fila rápida estilo Monday: "+ Agregar tarea..." */}
-                          <tr className="bg-[#fafbfc] hover:bg-[#f5f9ff] transition-colors">
-                            <td colSpan={8} className="py-2 px-4">
-                              <div className="flex items-center gap-2">
-                                <Plus className="w-4 h-4 text-[#0073ea] shrink-0" />
+                          <tr className="h-9 min-h-[36px] max-h-[36px] leading-[36px] bg-[#fafbfc] hover:bg-[#f6f7fb] transition-colors border-b border-[#d0d4e4]">
+                            <td
+                              colSpan={9}
+                              className="h-9 min-h-[36px] max-h-[36px] py-0 px-3 border-r border-[#d0d4e4]"
+                            >
+                              <div className="flex items-center gap-2 h-full">
+                                <Plus className="w-3.5 h-3.5 text-[#0073ea] shrink-0" />
                                 <input
                                   type="text"
                                   data-testid={`quick-add-item-input-${group.id}`}
@@ -1338,7 +1378,7 @@ export const BoardView: React.FC = () => {
                                       void handleQuickAddItem(group.id);
                                     }
                                   }}
-                                  className="flex-1 text-xs py-1.5 px-2.5 rounded-lg border border-transparent focus:border-[#0073ea] focus:bg-white bg-transparent text-[#323338] placeholder-[#676879] focus:outline-none transition-all"
+                                  className="flex-1 text-xs h-7 px-2 rounded border border-transparent focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] focus:bg-white bg-transparent text-[#323338] placeholder-[#676879] focus:outline-none transition-all"
                                 />
                                 <button
                                   type="button"
@@ -1346,7 +1386,7 @@ export const BoardView: React.FC = () => {
                                     void handleQuickAddItem(group.id)
                                   }
                                   data-testid={`quick-add-item-submit-${group.id}`}
-                                  className="px-3 py-1 rounded-lg bg-[#0073ea] hover:bg-[#0060b9] text-white text-xs font-semibold transition-colors cursor-pointer shrink-0"
+                                  className="px-2.5 h-6 rounded bg-[#0073ea] hover:bg-[#0060b9] text-white text-xs font-semibold transition-colors cursor-pointer shrink-0"
                                 >
                                   Agregar
                                 </button>
@@ -1358,18 +1398,18 @@ export const BoardView: React.FC = () => {
                         {/* Fila inferior de resumen visual con barra de estados y Sumatorias de Horas/Presupuesto */}
                         {group.items.length > 0 && (
                           <tfoot>
-                            <tr className="bg-[#fafbfc] border-t border-gray-200">
+                            <tr className="h-9 min-h-[36px] max-h-[36px] bg-[#fafbfc] border-t border-[#d0d4e4]">
                               <td
-                                colSpan={2}
-                                className="py-2.5 px-4 text-right text-xs font-semibold text-[#676879]"
+                                colSpan={3}
+                                className="h-9 min-h-[36px] max-h-[36px] px-3 text-right text-xs font-semibold text-[#676879] border-r border-[#d0d4e4]"
                               >
                                 Progreso del grupo ({totalGroupItems}{' '}
                                 {totalGroupItems === 1 ? 'tarea' : 'tareas'})
                               </td>
-                              <td className="p-2 border-l border-gray-200">
+                              <td className="h-9 min-h-[36px] max-h-[36px] p-1 border-r border-[#d0d4e4]">
                                 <div
                                   aria-label={`Barra de distribución de estados de ${group.title}`}
-                                  className="w-full h-5 rounded-md overflow-hidden flex bg-gray-200"
+                                  className="w-full h-5 rounded overflow-hidden flex bg-gray-200"
                                 >
                                   {activeBoard.statuses.map((st) => {
                                     const count = group.items.filter(
@@ -1393,27 +1433,27 @@ export const BoardView: React.FC = () => {
                               </td>
                               <td
                                 colSpan={2}
-                                className="py-2.5 px-3 border-l border-gray-200 text-right text-xs font-bold text-[#676879]"
+                                className="h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] text-right text-xs font-bold text-[#676879]"
                               >
                                 Sumatoria:
                               </td>
-                              <td className="py-2.5 px-2.5 border-l border-gray-200 text-center">
+                              <td className="h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] text-center">
                                 <span
                                   data-testid={`group-sum-hours-${group.id}`}
-                                  className="inline-block px-2 py-0.5 rounded-md bg-[#e6f1fd] text-[#0073ea] text-xs font-extrabold"
+                                  className="inline-block px-1.5 py-0.5 rounded bg-[#e6f1fd] text-[#0073ea] text-xs font-extrabold"
                                 >
                                   {groupTotalHours} h
                                 </span>
                               </td>
-                              <td className="py-2.5 px-2.5 border-l border-gray-200 text-center">
+                              <td className="h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] text-center">
                                 <span
                                   data-testid={`group-sum-budget-${group.id}`}
-                                  className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-[#037f4c] text-xs font-extrabold"
+                                  className="inline-block px-1.5 py-0.5 rounded bg-emerald-50 text-[#037f4c] text-xs font-extrabold"
                                 >
                                   ${groupTotalBudget.toLocaleString('en-US')}
                                 </span>
                               </td>
-                              <td className="border-l border-gray-200" />
+                              <td className="h-9 min-h-[36px] max-h-[36px] border-r border-[#d0d4e4]" />
                             </tr>
                           </tfoot>
                         )}

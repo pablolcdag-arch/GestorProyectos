@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Figtree', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+  --color-monday-border: #d0d4e4;
+  --color-monday-hover: #f6f7fb;
+  --color-monday-text: #323338;
+  --color-monday-subtext: #676879;
+  --color-monday-blue: #0073ea;
+}
+
 @layer base {
   body {
-    font-family: 'Figtree', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Figtree', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
     background-color: #f5f6f8;
     color: #323338;
     margin: 0;

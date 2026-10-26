@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -250,6 +251,16 @@ def seed_initial_data(db: Session) -> None:
     db.add_all([g2_week, g2_prog, g2_done])
     db.flush()
 
+    today = datetime.now(timezone.utc).date()
+    d_m5 = (today - timedelta(days=5)).isoformat()
+    d_m2 = (today - timedelta(days=2)).isoformat()
+    d_m1 = (today - timedelta(days=1)).isoformat()
+    d_p2 = (today + timedelta(days=2)).isoformat()
+    d_p5 = (today + timedelta(days=5)).isoformat()
+    d_p7 = (today + timedelta(days=7)).isoformat()
+    d_p10 = (today + timedelta(days=10)).isoformat()
+    d_p14 = (today + timedelta(days=14)).isoformat()
+
     # 6 tareas realistas en Tablero 1 (Roadmap de Producto Q4)
     roadmap_tasks = [
         TaskItem(
@@ -259,8 +270,8 @@ def seed_initial_data(db: Session) -> None:
             status_key="in_progress",
             priority="critical",
             assignee_id=ana.id,
-            start_date="2026-10-18",
-            due_date="2026-10-25",
+            start_date=d_m5,
+            due_date=d_p5,
             estimated_hours=16.0,
             budget=2400.0,
             notes="Soportar OAuth2 real y modo simulador determinístico en local.",
@@ -273,8 +284,8 @@ def seed_initial_data(db: Session) -> None:
             status_key="done",
             priority="high",
             assignee_id=carlos.id,
-            start_date="2026-10-16",
-            due_date="2026-10-22",
+            start_date=d_m5,
+            due_date=d_m1,
             estimated_hours=12.0,
             budget=1800.0,
             notes="Incluir los 5 estados iniciales por defecto personalizables.",
@@ -287,8 +298,8 @@ def seed_initial_data(db: Session) -> None:
             status_key="in_progress",
             priority="high",
             assignee_id=lucia.id,
-            start_date="2026-10-20",
-            due_date="2026-10-28",
+            start_date=d_m2,
+            due_date=d_p7,
             estimated_hours=24.0,
             budget=3600.0,
             notes="Actualización optimista con rollback ante errores de red.",
@@ -301,8 +312,8 @@ def seed_initial_data(db: Session) -> None:
             status_key="blocked",
             priority="medium",
             assignee_id=martin.id,
-            start_date="2026-10-24",
-            due_date="2026-11-02",
+            start_date=d_m1,
+            due_date=d_p10,
             estimated_hours=10.0,
             budget=1500.0,
             notes="Esperando definición de endpoints del proveedor externo.",
@@ -315,8 +326,8 @@ def seed_initial_data(db: Session) -> None:
             status_key="handed_over",
             priority="low",
             assignee_id=carlos.id,
-            start_date="2026-10-27",
-            due_date="2026-11-05",
+            start_date=today.isoformat(),
+            due_date=d_p14,
             estimated_hours=8.0,
             budget=950.0,
             notes="Entregado al equipo de infraestructura con scripts listos.",
@@ -329,8 +340,8 @@ def seed_initial_data(db: Session) -> None:
             status_key="not_started",
             priority="medium",
             assignee_id=ana.id,
-            start_date="2026-10-15",
-            due_date="2026-10-20",
+            start_date=d_m5,
+            due_date=d_p2,
             estimated_hours=6.0,
             budget=750.0,
             notes="Documentado en AGENTS.md y decisions_log.md.",
@@ -347,8 +358,8 @@ def seed_initial_data(db: Session) -> None:
             status_key="in_progress",
             priority="high",
             assignee_id=lucia.id,
-            start_date="2026-10-18",
-            due_date="2026-10-24",
+            start_date=d_m5,
+            due_date=d_p5,
             estimated_hours=10.0,
             budget=1200.0,
             notes="Enfocar propuesta de valor en velocidad y colaboración visual.",
@@ -361,8 +372,8 @@ def seed_initial_data(db: Session) -> None:
             status_key="not_started",
             priority="critical",
             assignee_id=martin.id,
-            start_date="2026-10-20",
-            due_date="2026-10-26",
+            start_date=d_m2,
+            due_date=d_p7,
             estimated_hours=14.0,
             budget=2100.0,
             notes="Definir embudo de registro con Google y Microsoft SSO.",
@@ -375,8 +386,8 @@ def seed_initial_data(db: Session) -> None:
             status_key="in_progress",
             priority="medium",
             assignee_id=carlos.id,
-            start_date="2026-10-21",
-            due_date="2026-10-30",
+            start_date=d_m1,
+            due_date=d_p10,
             estimated_hours=20.0,
             budget=4500.0,
             notes="Grabación de pantalla con flujo de tablas y Kanban.",
@@ -389,8 +400,8 @@ def seed_initial_data(db: Session) -> None:
             status_key="blocked",
             priority="high",
             assignee_id=ana.id,
-            start_date="2026-10-22",
-            due_date="2026-10-27",
+            start_date=today.isoformat(),
+            due_date=d_p14,
             estimated_hours=4.0,
             budget=8000.0,
             notes="Pendiente de revisión financiera trimestral.",
@@ -403,8 +414,8 @@ def seed_initial_data(db: Session) -> None:
             status_key="handed_over",
             priority="low",
             assignee_id=lucia.id,
-            start_date="2026-10-25",
-            due_date="2026-11-01",
+            start_date=today.isoformat(),
+            due_date=d_p14,
             estimated_hours=12.0,
             budget=1600.0,
             notes="Carpeta compartida con formatos adaptados.",
@@ -417,8 +428,8 @@ def seed_initial_data(db: Session) -> None:
             status_key="done",
             priority="medium",
             assignee_id=carlos.id,
-            start_date="2026-10-14",
-            due_date="2026-10-19",
+            start_date=d_m5,
+            due_date=d_m1,
             estimated_hours=8.0,
             budget=1100.0,
             notes="Aprobado por todo el equipo.",
