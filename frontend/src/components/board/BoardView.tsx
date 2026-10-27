@@ -5,10 +5,7 @@ import {
   BarChart3,
   Calendar,
   CalendarRange,
-  Check,
   CheckSquare,
-  ChevronDown,
-  ChevronRight,
   Copy,
   Download,
   Edit2,
@@ -30,7 +27,7 @@ import { api } from '../../services/api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import {
-  MONDAY_COLOR_PALETTE,
+  GROUP_COLOR_PALETTE,
   PRIORITY_MAP,
   type BoardStatusRead,
   type TaskGroupRead,
@@ -41,6 +38,7 @@ import {
 import { AutomationsModal } from './AutomationsModal';
 import { DashboardView } from './DashboardView';
 import { GroupFooterSummary } from './GroupFooterSummary';
+import { GroupHeader } from './GroupHeader';
 import { ItemDetailDrawer } from './ItemDetailDrawer';
 import { KanbanView } from './KanbanView';
 import { StatusCell } from './StatusCell';
@@ -69,6 +67,7 @@ export const BoardView: React.FC = () => {
     error,
     clearError,
     toggleGroupCollapse,
+    collapseAllGroups,
     createGroup,
     updateGroup,
     deleteGroup,
@@ -99,11 +98,6 @@ export const BoardView: React.FC = () => {
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [newGroupTitle, setNewGroupTitle] = useState('');
   const [newGroupColor, setNewGroupColor] = useState('#579bfc');
-
-  // Estado para editar cabecera de un grupo existente
-  const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
-  const [editGroupTitle, setEditGroupTitle] = useState('');
-  const [editGroupColor, setEditGroupColor] = useState('#579bfc');
 
   // Estado para edición inline de título y notas de una tarea
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
@@ -269,34 +263,6 @@ export const BoardView: React.FC = () => {
       setIsCreatingGroup(false);
     } catch {
       // El store ya gestiona el estado de error
-    }
-  };
-
-  const handleStartEditGroup = (group: TaskGroupRead) => {
-    setEditingGroupId(group.id);
-    setEditGroupTitle(group.title);
-    setEditGroupColor(group.color);
-  };
-
-  const handleSaveEditGroup = async (groupId: number) => {
-    const cleaned = editGroupTitle.trim();
-    if (!cleaned) return;
-    setEditingGroupId(null);
-    try {
-      await updateGroup(groupId, {
-        title: cleaned,
-        color: editGroupColor,
-      });
-    } catch {
-      // Rollback y error ya manejados por el store
-    }
-  };
-
-  const handleDeleteGroup = async (groupId: number) => {
-    try {
-      await deleteGroup(groupId);
-    } catch {
-      // Rollback y error ya manejados por el store
     }
   };
 
@@ -614,7 +580,7 @@ export const BoardView: React.FC = () => {
             />
 
             <div className="flex items-center gap-1.5 flex-wrap">
-              {MONDAY_COLOR_PALETTE.slice(0, 8).map((hex) => (
+              {GROUP_COLOR_PALETTE.slice(0, 8).map((hex) => (
                 <button
                   key={hex}
                   type="button"
@@ -692,8 +658,6 @@ export const BoardView: React.FC = () => {
         <div className="space-y-8">
           {activeBoard.groups.map((group: TaskGroupRead) => {
             const visibleItems = group.items.filter(matchesFilter);
-            const totalGroupItems = group.items.length;
-            const isEditingThisGroup = editingGroupId === group.id;
 
             const groupTotalHours =
               Math.round(
@@ -713,116 +677,22 @@ export const BoardView: React.FC = () => {
                 data-testid={`task-group-${group.id}`}
                 className="space-y-2"
               >
-                {/* Cabecera del Grupo */}
-                <div className="flex items-center justify-between gap-2">
-                  {isEditingThisGroup ? (
-                    <div className="flex items-center gap-2 flex-wrap bg-[#f7f8fa] px-3 py-1.5 rounded-xl border border-[#0073ea]">
-                      <input
-                        type="text"
-                        aria-label={`Editar título del grupo ${group.title}`}
-                        data-testid={`input-edit-group-title-${group.id}`}
-                        value={editGroupTitle}
-                        onChange={(e) => setEditGroupTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            void handleSaveEditGroup(group.id);
-                          }
-                        }}
-                        className="px-2.5 py-1 text-sm font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-[#0073ea]"
-                        autoFocus
-                      />
-
-                      <div className="flex items-center gap-1">
-                        {MONDAY_COLOR_PALETTE.slice(0, 6).map((hex) => (
-                          <button
-                            key={hex}
-                            type="button"
-                            onClick={() => setEditGroupColor(hex)}
-                            className={`w-4 h-4 rounded-full cursor-pointer ${
-                              editGroupColor.toLowerCase() === hex.toLowerCase()
-                                ? 'ring-2 ring-offset-1 ring-[#323338]'
-                                : ''
-                            }`}
-                            style={{ backgroundColor: hex }}
-                          />
-                        ))}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => void handleSaveEditGroup(group.id)}
-                        data-testid={`btn-save-group-${group.id}`}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#00c875] text-white text-xs font-semibold cursor-pointer"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Guardar</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setEditingGroupId(null)}
-                        className="p-1 text-[#676879] hover:text-[#323338] cursor-pointer"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleGroupCollapse(group.id)}
-                        data-testid={`toggle-group-${group.id}`}
-                        className="flex items-center gap-2 text-left group cursor-pointer"
-                      >
-                        <span
-                          className="p-1 rounded-md text-white transition-transform"
-                          style={{ backgroundColor: group.color }}
-                        >
-                          {group.collapsed ? (
-                            <ChevronRight className="w-4 h-4" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4" />
-                          )}
-                        </span>
-                        <h2
-                          className="text-base font-bold tracking-tight"
-                          style={{ color: group.color }}
-                        >
-                          {group.title}
-                        </h2>
-                        <span className="text-xs text-[#676879] font-medium ml-1">
-                          ({totalGroupItems}{' '}
-                          {totalGroupItems === 1 ? 'tarea' : 'tareas'})
-                        </span>
-                      </button>
-
-                      <div className="flex items-center gap-1 ml-2">
-                        <button
-                          type="button"
-                          onClick={() => handleStartEditGroup(group)}
-                          data-testid={`btn-edit-group-${group.id}`}
-                          aria-label={`Editar grupo ${group.title}`}
-                          title="Editar grupo"
-                          className="p-1 rounded-md text-[#676879] hover:text-[#323338] hover:bg-gray-100 transition-colors cursor-pointer"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => void handleDeleteGroup(group.id)}
-                          data-testid={`btn-delete-group-${group.id}`}
-                          aria-label={`Eliminar grupo ${group.title}`}
-                          title="Eliminar grupo"
-                          className="p-1 rounded-md text-[#676879] hover:text-[#e2445c] hover:bg-red-50 transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {/* Cabecera del Grupo y Fila Contraída (1:1 Monday.com) */}
+                <GroupHeader
+                  group={group}
+                  statuses={activeBoard.statuses}
+                  onRenameGroup={async (title, color) => {
+                    await updateGroup(group.id, { title, color });
+                  }}
+                  onDeleteGroup={async () => {
+                    await deleteGroup(group.id);
+                  }}
+                  onUpdateColor={async (color) => {
+                    await updateGroup(group.id, { color });
+                  }}
+                  onToggleCollapse={() => toggleGroupCollapse(group.id)}
+                  onCollapseAll={(collapse) => collapseAllGroups(collapse)}
+                />
 
                 {/* Tabla de Filas (Items) estilo Monday Work OS */}
                 {!group.collapsed && (

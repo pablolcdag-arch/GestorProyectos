@@ -173,6 +173,7 @@ interface WorkspaceState {
   removeChecklistItem: (checklistId: number) => Promise<void>;
 
   toggleGroupCollapse: (groupId: number) => void;
+  collapseAllGroups: (collapse: boolean) => void;
   clearError: () => void;
   resetStore: () => void;
 }
@@ -1301,6 +1302,20 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         groups: currentBoard.groups.map((grp) =>
           grp.id === groupId ? { ...grp, collapsed: !grp.collapsed } : grp,
         ),
+      },
+    });
+  },
+
+  collapseAllGroups: (collapse: boolean) => {
+    const currentBoard = get().activeBoard;
+    if (!currentBoard) return;
+    set({
+      activeBoard: {
+        ...currentBoard,
+        groups: currentBoard.groups.map((grp) => ({
+          ...grp,
+          collapsed: collapse,
+        })),
       },
     });
   },

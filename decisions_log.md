@@ -180,6 +180,21 @@
 - **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.12s, 30/30 tests en Vitest y 29/29 tests en Pytest pasando al 100% (59 tests en verde sin regresiones).
 - **Impacto:** Resumen visual continuo y métricas instantáneas por grupo idénticas a Monday.com con modularidad desacoplada.
 
+---
+
+## [26/10/2026] — Sprint 4: Gestión de Grupos, Colapso y Paleta Oficial de 18 Colores 1:1 Monday.com
+- **Decisión:**
+  1. **Paleta Oficial de 18 Colores para Grupos:**
+     - Se integra en `frontend/src/types/index.ts` la matriz oficial `GROUP_COLOR_PALETTE` de 18 tonalidades Monday.com y se implementa su selector flotante en cuadrícula con persistencia optimista en `useWorkspaceStore`.
+  2. **Componente Modular GroupHeader y Menú de 3 Puntos:**
+     - Se extrae la cabecera a `frontend/src/components/board/GroupHeader.tsx` incorporando el botón de menú contextual (`...`) con opciones de contraer/expandir, renombrado inline, cambio de color y eliminación defensiva.
+  3. **Colapso Individual y Masivo con Vista Compacta 1:1:**
+     - Se añade la función `collapseAllGroups` al store para colapsar o expandir todos los grupos con un clic.
+     - En estado contraído, se renderiza una fila compacta de 36px con borde perimetral, acento izquierdo de 4px, chevron `>`, contador de tareas y mini-batería de estados de 18px.
+- **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.15s, 34/34 tests en Vitest y 29/29 tests en Pytest pasando al 100% (63 tests en verde sin regresiones).
+- **Impacto:** Arquitectura de grupos robusta, altamente interactiva y visualmente fiel a Monday.com.
+
+
 
 
 

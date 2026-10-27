@@ -440,3 +440,24 @@ export const MONDAY_COLOR_PALETTE: string[] = [
   '#999999', // light_grey
   '#333333', // charcoal
 ];
+
+export const GROUP_COLOR_PALETTE: string[] = [
+  '#579bfc',
+  '#00c875',
+  '#fdab3d',
+  '#df2f4a',
+  '#a25ddc',
+  '#4eccc6',
+  '#ff5ac4',
+  '#cab641',
+  '#808080',
+  '#784bd1',
+  '#007eb5',
+  '#037f4c',
+  '#bb3354',
+  '#ff6d3b',
+  '#5559df',
+  '#66ccff',
+  '#9cd326',
+  '#7f5347',
+];
