@@ -234,6 +234,21 @@
 - **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.15s, 44/44 tests en Vitest y 29/29 tests en Pytest pasando al 100% (73 tests en verde sin regresiones).
 - **Impacto:** Experiencia colaborativa profunda por tarea idéntica a Monday.com.
 
+---
+
+## [26/10/2026] — Sprint 8: Vista Kanban Refinada y Switcher de Vistas 1:1 Monday.com (Culminación del Roadmap)
+- **Decisión:**
+  1. **Switcher de Vistas Superior Estilo Monday.com:**
+     - En `BoardView.tsx`, se integran las pestañas superiores con indicador activo azul `#0073ea` (`border-b-2`), contador reactivo, menú contextual de vista (`...`) y botón desplegable `+` ("Añadir vista") con soporte para cambiar dinámicamente entre Tabla, Kanban, Cronograma y Dashboard.
+  2. **Tarjetas Kanban Refinadas y Creación Rápida:**
+     - En `KanbanView.tsx`, se estilizan las tarjetas con bordes redondeados (`rounded-lg`), sombra suave interactiva y acento visual vertical `border-l-4` según el color de la prioridad de la tarea.
+     - Se integran avatares circulares de asignación, alertas visuales de fecha límite y creación rápida inline al pie de cada columna de estado.
+  3. **Culminación Exitosa de la Réplica 1:1 de Monday.com:**
+     - Con la finalización y aprobación del Sprint 8, se alcanzan al 100% todos los objetivos planteados en el informe de ingeniería inversa de Monday.com.
+- **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.15s, 47/47 tests en Vitest y 29/29 tests en Pytest pasando al 100% (**76 tests automatizados en verde con 0 fallos ni regresiones**).
+- **Impacto:** Gestor de Proyectos cuenta con paridad estética, de componentes, diseño atómico y flujo interactivo idéntico a Monday.com, respaldado por una suite integral de tests automatizados y arquitectura modular desacoplada.
+
+
 
 
 

@@ -13,6 +13,7 @@ import {
   Kanban,
   Layers,
   MessageSquare,
+  MoreHorizontal,
   Palette,
   Plus,
   Table2,
@@ -93,6 +94,7 @@ export const BoardView: React.FC = () => {
   const [viewMode, setViewMode] = useState<
     'table' | 'kanban' | 'timeline' | 'dashboard'
   >('table');
+  const [isAddViewMenuOpen, setIsAddViewMenuOpen] = useState(false);
 
   // Búsqueda y Filtros en Vivo
   const [searchQuery, setSearchQuery] = useState('');
@@ -517,69 +519,6 @@ export const BoardView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Conmutador de 4 Vistas: Tabla Principal | Kanban | Cronograma | Dashboard */}
-            <div
-              role="group"
-              aria-label="Selector de vista del tablero"
-              className="inline-flex items-center p-1 rounded-xl bg-[#f5f6f8] border border-gray-200 flex-wrap"
-            >
-              <button
-                type="button"
-                onClick={() => setViewMode('table')}
-                data-testid="view-tab-table"
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  viewMode === 'table'
-                    ? 'bg-white text-[#0073ea] shadow-2xs'
-                    : 'text-[#676879] hover:text-[#323338]'
-                }`}
-              >
-                <Table2 className="w-3.5 h-3.5" />
-                <span data-testid="btn-view-table">Tabla Principal</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setViewMode('kanban')}
-                data-testid="view-tab-kanban"
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  viewMode === 'kanban'
-                    ? 'bg-white text-[#0073ea] shadow-2xs'
-                    : 'text-[#676879] hover:text-[#323338]'
-                }`}
-              >
-                <Kanban className="w-3.5 h-3.5" />
-                <span data-testid="btn-view-kanban">Kanban</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setViewMode('timeline')}
-                data-testid="view-tab-timeline"
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  viewMode === 'timeline'
-                    ? 'bg-white text-[#0073ea] shadow-2xs'
-                    : 'text-[#676879] hover:text-[#323338]'
-                }`}
-              >
-                <CalendarRange className="w-3.5 h-3.5" />
-                <span>Cronograma</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setViewMode('dashboard')}
-                data-testid="view-tab-dashboard"
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  viewMode === 'dashboard'
-                    ? 'bg-white text-[#0073ea] shadow-2xs'
-                    : 'text-[#676879] hover:text-[#323338]'
-                }`}
-              >
-                <BarChart3 className="w-3.5 h-3.5" />
-                <span>Dashboard</span>
-              </button>
-            </div>
-
             <button
               type="button"
               onClick={() => void handleExportCsv()}
@@ -619,6 +558,169 @@ export const BoardView: React.FC = () => {
               <Palette className="w-4 h-4" />
               <span>Personalizar Estados</span>
             </button>
+          </div>
+        </div>
+
+        {/* Switcher de Vistas Superior Estilo Monday.com */}
+        <div
+          role="tablist"
+          aria-label="Selector de vistas del tablero"
+          className="border-b border-[#d0d4e4] flex items-center justify-between gap-2 overflow-x-auto pt-1"
+        >
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Pestaña: Tabla Principal */}
+            <div className="flex items-center">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={viewMode === 'table'}
+                onClick={() => setViewMode('table')}
+                data-testid="view-tab-table"
+                className={`inline-flex items-center gap-1.5 py-2 px-3 border-b-2 text-xs font-semibold transition-all cursor-pointer ${
+                  viewMode === 'table'
+                    ? 'border-[#0073ea] text-[#0073ea] font-bold'
+                    : 'border-transparent text-[#676879] hover:text-[#323338] hover:border-gray-300'
+                }`}
+              >
+                <Table2 className="w-3.5 h-3.5" />
+                <span data-testid="btn-view-table">Tabla Principal</span>
+              </button>
+              <button
+                type="button"
+                data-testid="view-menu-table"
+                title="Opciones de vista"
+                className="p-1 rounded hover:bg-gray-100 text-[#676879] hover:text-[#323338] transition-colors cursor-pointer"
+              >
+                <MoreHorizontal className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Pestaña: Kanban */}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === 'kanban'}
+              onClick={() => setViewMode('kanban')}
+              data-testid="view-tab-kanban"
+              className={`inline-flex items-center gap-1.5 py-2 px-3 border-b-2 text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === 'kanban'
+                  ? 'border-[#0073ea] text-[#0073ea] font-bold'
+                  : 'border-transparent text-[#676879] hover:text-[#323338] hover:border-gray-300'
+              }`}
+            >
+              <Kanban className="w-3.5 h-3.5" />
+              <span data-testid="btn-view-kanban">Kanban</span>
+              <span
+                data-testid="kanban-tab-counter"
+                className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#edf5ff] text-[#0073ea]"
+              >
+                {filteredAllItems.length}
+              </span>
+            </button>
+
+            {/* Pestaña: Cronograma */}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === 'timeline'}
+              onClick={() => setViewMode('timeline')}
+              data-testid="view-tab-timeline"
+              className={`inline-flex items-center gap-1.5 py-2 px-3 border-b-2 text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === 'timeline'
+                  ? 'border-[#0073ea] text-[#0073ea] font-bold'
+                  : 'border-transparent text-[#676879] hover:text-[#323338] hover:border-gray-300'
+              }`}
+            >
+              <CalendarRange className="w-3.5 h-3.5" />
+              <span>Cronograma</span>
+            </button>
+
+            {/* Pestaña: Dashboard */}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === 'dashboard'}
+              onClick={() => setViewMode('dashboard')}
+              data-testid="view-tab-dashboard"
+              className={`inline-flex items-center gap-1.5 py-2 px-3 border-b-2 text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === 'dashboard'
+                  ? 'border-[#0073ea] text-[#0073ea] font-bold'
+                  : 'border-transparent text-[#676879] hover:text-[#323338] hover:border-gray-300'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>Dashboard</span>
+            </button>
+
+            {/* Botón + Añadir Vista con Menú Desplegable */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsAddViewMenuOpen((prev) => !prev)}
+                data-testid="btn-add-view"
+                aria-label="Añadir nueva vista al tablero"
+                title="Añadir vista"
+                className="inline-flex items-center gap-1 py-1 px-2 rounded-lg border border-transparent hover:border-gray-200 hover:bg-gray-100 text-xs text-[#676879] hover:text-[#323338] font-medium transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 text-[#0073ea]" />
+                <span className="hidden sm:inline">Añadir vista</span>
+              </button>
+
+              {isAddViewMenuOpen && (
+                <div
+                  data-testid="add-view-dropdown"
+                  className="absolute left-0 top-full mt-1.5 w-48 bg-white border border-[#d0d4e4] rounded-xl shadow-lg z-30 p-1.5 space-y-1"
+                >
+                  <div className="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-[#676879]">
+                    Vistas disponibles
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewMode('table');
+                      setIsAddViewMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-[#323338] hover:bg-[#edf5ff] hover:text-[#0073ea] rounded-lg transition-colors text-left cursor-pointer"
+                  >
+                    <Table2 className="w-3.5 h-3.5" />
+                    <span>Tabla Principal</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewMode('kanban');
+                      setIsAddViewMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-[#323338] hover:bg-[#edf5ff] hover:text-[#0073ea] rounded-lg transition-colors text-left cursor-pointer"
+                  >
+                    <Kanban className="w-3.5 h-3.5" />
+                    <span>Kanban</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewMode('timeline');
+                      setIsAddViewMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-[#323338] hover:bg-[#edf5ff] hover:text-[#0073ea] rounded-lg transition-colors text-left cursor-pointer"
+                  >
+                    <CalendarRange className="w-3.5 h-3.5" />
+                    <span>Cronograma</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewMode('dashboard');
+                      setIsAddViewMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-[#323338] hover:bg-[#edf5ff] hover:text-[#0073ea] rounded-lg transition-colors text-left cursor-pointer"
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    <span>Dashboard</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
