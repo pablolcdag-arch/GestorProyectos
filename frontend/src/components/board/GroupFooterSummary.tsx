@@ -6,6 +6,7 @@ interface GroupFooterSummaryProps {
   statuses: BoardStatusRead[];
   groupTotalHours: number;
   groupTotalBudget: number;
+  visibleColumns?: Record<string, boolean>;
 }
 
 const ORDERED_PRIORITIES = [
@@ -73,7 +74,10 @@ export const GroupFooterSummary: React.FC<GroupFooterSummaryProps> = ({
   statuses,
   groupTotalHours,
   groupTotalBudget,
+  visibleColumns,
 }) => {
+  const isColVisible = (k: string) =>
+    !visibleColumns || visibleColumns[k] !== false;
   const totalItems = group.items.length;
   if (totalItems === 0) return null;
 
@@ -125,93 +129,105 @@ export const GroupFooterSummary: React.FC<GroupFooterSummaryProps> = ({
         <td className="w-[331px] min-w-[331px] h-9 min-h-[36px] max-h-[36px] px-3 text-left border-r border-[#d0d4e4] sticky left-10 z-10 bg-[#fafbfc] truncate text-xs font-semibold text-[#676879]" />
 
         {/* Columna 2: Responsable */}
-        <td className="w-[98px] min-w-[98px] h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] bg-[#fafbfc]" />
+        {isColVisible('assignee') && (
+          <td className="w-[98px] min-w-[98px] h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] bg-[#fafbfc]" />
+        )}
 
         {/* Columna 3: Estado (Battery Summary 1:1 Monday.com) */}
-        <td className="w-[134px] min-w-[134px] h-9 min-h-[36px] max-h-[36px] p-1.5 border-r border-[#d0d4e4]">
-          <div
-            data-testid={`battery-summary-status-${group.id}`}
-            aria-label={`Barra de distribución de estados de ${group.title}`}
-            className="w-full h-[22px] rounded-[3px] overflow-hidden flex bg-[#e5e7eb] shadow-2xs"
-          >
-            {statusSegments.map((seg) => (
-              <div
-                key={seg!.key}
-                data-testid={`battery-segment-status-${group.id}-${seg!.key}`}
-                title={`${seg!.label}: ${seg!.count} ${seg!.count === 1 ? 'tarea' : 'tareas'} (${seg!.roundedPct}%)`}
-                style={{
-                  width: `${seg!.pct}%`,
-                  backgroundColor: seg!.color,
-                }}
-                className="h-full transition-all cursor-pointer hover:opacity-90 first:rounded-l-[3px] last:rounded-r-[3px]"
-              />
-            ))}
-          </div>
-        </td>
+        {isColVisible('status') && (
+          <td className="w-[134px] min-w-[134px] h-9 min-h-[36px] max-h-[36px] p-1.5 border-r border-[#d0d4e4]">
+            <div
+              data-testid={`battery-summary-status-${group.id}`}
+              aria-label={`Barra de distribución de estados de ${group.title}`}
+              className="w-full h-[22px] rounded-[3px] overflow-hidden flex bg-[#e5e7eb] shadow-2xs"
+            >
+              {statusSegments.map((seg) => (
+                <div
+                  key={seg!.key}
+                  data-testid={`battery-segment-status-${group.id}-${seg!.key}`}
+                  title={`${seg!.label}: ${seg!.count} ${seg!.count === 1 ? 'tarea' : 'tareas'} (${seg!.roundedPct}%)`}
+                  style={{
+                    width: `${seg!.pct}%`,
+                    backgroundColor: seg!.color,
+                  }}
+                  className="h-full transition-all cursor-pointer hover:opacity-90 first:rounded-l-[3px] last:rounded-r-[3px]"
+                />
+              ))}
+            </div>
+          </td>
+        )}
 
         {/* Columna 4: Prioridad (Battery Summary 1:1 Monday.com) */}
-        <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] p-1.5 border-r border-[#d0d4e4]">
-          <div
-            data-testid={`battery-summary-priority-${group.id}`}
-            aria-label={`Barra de distribución de prioridades de ${group.title}`}
-            className="w-full h-[22px] rounded-[3px] overflow-hidden flex bg-[#e5e7eb] shadow-2xs"
-          >
-            {prioritySegments.map((seg) => (
-              <div
-                key={seg!.key}
-                data-testid={`battery-segment-priority-${group.id}-${seg!.key}`}
-                title={`${seg!.label}: ${seg!.count} ${seg!.count === 1 ? 'tarea' : 'tareas'} (${seg!.roundedPct}%)`}
-                style={{
-                  width: `${seg!.pct}%`,
-                  backgroundColor: seg!.color,
-                }}
-                className="h-full transition-all cursor-pointer hover:opacity-90 first:rounded-l-[3px] last:rounded-r-[3px]"
-              />
-            ))}
-          </div>
-        </td>
+        {isColVisible('priority') && (
+          <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] p-1.5 border-r border-[#d0d4e4]">
+            <div
+              data-testid={`battery-summary-priority-${group.id}`}
+              aria-label={`Barra de distribución de prioridades de ${group.title}`}
+              className="w-full h-[22px] rounded-[3px] overflow-hidden flex bg-[#e5e7eb] shadow-2xs"
+            >
+              {prioritySegments.map((seg) => (
+                <div
+                  key={seg!.key}
+                  data-testid={`battery-segment-priority-${group.id}-${seg!.key}`}
+                  title={`${seg!.label}: ${seg!.count} ${seg!.count === 1 ? 'tarea' : 'tareas'} (${seg!.roundedPct}%)`}
+                  style={{
+                    width: `${seg!.pct}%`,
+                    backgroundColor: seg!.color,
+                  }}
+                  className="h-full transition-all cursor-pointer hover:opacity-90 first:rounded-l-[3px] last:rounded-r-[3px]"
+                />
+              ))}
+            </div>
+          </td>
+        )}
 
         {/* Columna 5: Fecha límite / Cronograma (Píldora de Rango Acumulado) */}
-        <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4]">
-          {dateRangeText ? (
-            <span
-              data-testid={`group-date-range-${group.id}`}
-              className="inline-block text-xs font-semibold px-2 py-0.5 rounded-[4px] bg-[#0073ea] text-white shadow-2xs truncate max-w-[130px]"
-              title={dateRangeText}
-            >
-              {dateRangeText}
-            </span>
-          ) : (
-            <span
-              data-testid={`group-date-range-${group.id}`}
-              className="text-xs text-[#676879]"
-            >
-              -
-            </span>
-          )}
-        </td>
+        {isColVisible('due_date') && (
+          <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4]">
+            {dateRangeText ? (
+              <span
+                data-testid={`group-date-range-${group.id}`}
+                className="inline-block text-xs font-semibold px-2 py-0.5 rounded-[4px] bg-[#0073ea] text-white shadow-2xs truncate max-w-[130px]"
+                title={dateRangeText}
+              >
+                {dateRangeText}
+              </span>
+            ) : (
+              <span
+                data-testid={`group-date-range-${group.id}`}
+                className="text-xs text-[#676879]"
+              >
+                -
+              </span>
+            )}
+          </td>
+        )}
 
         {/* Columna 6: Horas (Sumatoria con etiqueta sutil) */}
-        <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4]">
-          <span
-            data-testid={`group-sum-hours-${group.id}`}
-            className="inline-flex items-center gap-1 text-xs font-bold text-[#323338]"
-          >
-            <span>{groupTotalHours} h</span>
-            <span className="text-[10px] text-[#676879] font-normal">Total</span>
-          </span>
-        </td>
+        {isColVisible('estimated_hours') && (
+          <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4]">
+            <span
+              data-testid={`group-sum-hours-${group.id}`}
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#323338]"
+            >
+              <span>{groupTotalHours} h</span>
+              <span className="text-[10px] text-[#676879] font-normal">Total</span>
+            </span>
+          </td>
+        )}
 
         {/* Columna 7: Presupuesto (Sumatoria con etiqueta sutil) */}
-        <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4]">
-          <span
-            data-testid={`group-sum-budget-${group.id}`}
-            className="inline-flex items-center gap-1 text-xs font-bold text-[#323338]"
-          >
-            <span>${groupTotalBudget.toLocaleString('en-US')}</span>
-            <span className="text-[10px] text-[#676879] font-normal">Total</span>
-          </span>
-        </td>
+        {isColVisible('budget') && (
+          <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4]">
+            <span
+              data-testid={`group-sum-budget-${group.id}`}
+              className="inline-flex items-center gap-1 text-xs font-bold text-[#323338]"
+            >
+              <span>${groupTotalBudget.toLocaleString('en-US')}</span>
+              <span className="text-[10px] text-[#676879] font-normal">Total</span>
+            </span>
+          </td>
+        )}
 
         {/* Columna 8: Acciones */}
         <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] border-r border-[#d0d4e4] bg-[#fafbfc]" />

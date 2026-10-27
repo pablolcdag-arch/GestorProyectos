@@ -207,6 +207,20 @@
 - **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.14s, 38/38 tests en Vitest y 29/29 tests en Pytest pasando al 100% (67 tests en verde sin regresiones).
 - **Impacto:** Operaciones masivas fluidas e intuitivas con experiencia visual idéntica a Monday.com.
 
+---
+
+## [26/10/2026] — Sprint 6: Barra de Herramientas y Popovers Avanzados 1:1 Monday.com
+- **Decisión:**
+  1. **Componente Modular BoardToolbar:**
+     - Se crea `frontend/src/components/board/BoardToolbar.tsx` reuniendo las acciones principales de la toolbar de Monday.com: búsqueda con lupa, botón de filtros rápidos (`Filtrar v`), constructor de ordenamiento (`Ordenar`) y selector de visibilidad de columnas (`Ocultar`).
+  2. **Popovers Flotantes de Filtrado, Ordenamiento y Ocultamiento:**
+     - **Filtros Rápidos:** Tarjetas horizontales scrollables por columna con cálculo reactivo de tareas coincidentes y botón "Borrar todo".
+     - **Ocultar Columnas:** Selector de visibilidad con checkboxes temáticos persistido en `localStorage` y sincronizado tanto en el cuerpo de la tabla como en `GroupFooterSummary`.
+     - **Ordenar:** Constructor ascendente y descendente que reordena las tareas en vivo dentro de cada grupo.
+- **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.15s, 41/41 tests en Vitest y 29/29 tests en Pytest pasando al 100% (70 tests en verde sin regresiones).
+- **Impacto:** Herramientas de exploración, ordenamiento y personalización de vista ultra-rápidas con diseño Monday.com.
+
+
 
 
 

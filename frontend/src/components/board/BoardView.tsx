@@ -9,14 +9,12 @@ import {
   Copy,
   Download,
   Edit2,
-  FilterX,
   FolderKanban,
   Kanban,
   Layers,
   MessageSquare,
   Palette,
   Plus,
-  Search,
   Table2,
   Trash2,
   User as UserIcon,
@@ -37,6 +35,13 @@ import {
 } from '../../types';
 import { AutomationsModal } from './AutomationsModal';
 import { BatchActionBar } from './BatchActionBar';
+import {
+  BoardToolbar,
+  type ColumnKey,
+  type SortColumn,
+  type SortDirection,
+  type VisibleColumnsState,
+} from './BoardToolbar';
 import { DashboardView } from './DashboardView';
 import { GroupFooterSummary } from './GroupFooterSummary';
 import { GroupHeader } from './GroupHeader';
@@ -145,6 +150,66 @@ export const BoardView: React.FC = () => {
     });
   };
 
+  // Estado de visibilidad de columnas (Ocultar / Mostrar)
+  const [visibleColumns, setVisibleColumns] = useState<VisibleColumnsState>(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = window.localStorage.getItem('gestor_visible_columns');
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return {
+      assignee: true,
+      status: true,
+      due_date: true,
+      priority: true,
+      estimated_hours: true,
+      budget: true,
+    };
+  });
+
+  const handleToggleColumn = (key: ColumnKey) => {
+    setVisibleColumns((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem('gestor_visible_columns', JSON.stringify(next));
+        }
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleToggleAllColumns = (visible: boolean) => {
+    const next: VisibleColumnsState = {
+      assignee: visible,
+      status: visible,
+      due_date: visible,
+      priority: visible,
+      estimated_hours: visible,
+      budget: visible,
+    };
+    setVisibleColumns(next);
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('gestor_visible_columns', JSON.stringify(next));
+      }
+    } catch {}
+  };
+
+  // Estado de Ordenamiento Multi-Criterio
+  const [sortColumn, setSortColumn] = useState<SortColumn>('none');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  const handleSortChange = (col: SortColumn, dir: SortDirection) => {
+    setSortColumn(col);
+    setSortDirection(dir);
+  };
+
   if (isLoadingBoard && !activeBoard) {
     return (
       <div className="flex-1 flex items-center justify-center p-12 text-sm text-[#676879]">
@@ -238,6 +303,41 @@ export const BoardView: React.FC = () => {
     setFilterAssignee('');
     setFilterStatus('');
     setFilterPriority('');
+  };
+
+  const sortItems = (items: TaskItemRead[]): TaskItemRead[] => {
+    if (sortColumn === 'none') return items;
+    return [...items].sort((a, b) => {
+      let cmp = 0;
+      if (sortColumn === 'title') {
+        cmp = a.title.localeCompare(b.title);
+      } else if (sortColumn === 'status') {
+        const labelA = statusMap.get(a.status_key)?.label ?? a.status_key;
+        const labelB = statusMap.get(b.status_key)?.label ?? b.status_key;
+        cmp = labelA.localeCompare(labelB);
+      } else if (sortColumn === 'priority') {
+        const weights: Record<string, number> = {
+          critical: 4,
+          high: 3,
+          medium: 2,
+          low: 1,
+        };
+        const wA = weights[a.priority.toLowerCase()] ?? 0;
+        const wB = weights[b.priority.toLowerCase()] ?? 0;
+        cmp = wA - wB;
+      } else if (sortColumn === 'due_date') {
+        cmp = (a.due_date || '').localeCompare(b.due_date || '');
+      } else if (sortColumn === 'estimated_hours') {
+        cmp = (a.estimated_hours ?? 0) - (b.estimated_hours ?? 0);
+      } else if (sortColumn === 'budget') {
+        cmp = (a.budget ?? 0) - (b.budget ?? 0);
+      } else if (sortColumn === 'assignee') {
+        const nameA = a.assignee?.full_name ?? '';
+        const nameB = b.assignee?.full_name ?? '';
+        cmp = nameA.localeCompare(nameB);
+      }
+      return sortDirection === 'asc' ? cmp : -cmp;
+    });
   };
 
   // Exportación CSV del Tablero
@@ -522,80 +622,28 @@ export const BoardView: React.FC = () => {
           </div>
         </div>
 
-        {/* Barra de Búsqueda y Filtros en Vivo */}
-        <div className="flex flex-col lg:flex-row lg:items-center gap-2.5 bg-[#f7f8fa] p-3 rounded-xl border border-gray-200">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-4 h-4 text-[#676879] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              data-testid="board-search-input"
-              aria-label="Buscar tareas en el tablero"
-              placeholder="Buscar tareas por título o notas..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-gray-300 bg-white text-[#323338] placeholder-[#676879] focus:outline-none focus:border-[#0073ea]"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <select
-              data-testid="board-filter-assignee"
-              aria-label="Filtrar por responsable"
-              value={filterAssignee}
-              onChange={(e) => setFilterAssignee(e.target.value)}
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-[#323338] focus:outline-none focus:border-[#0073ea] cursor-pointer"
-            >
-              <option value="">Persona: Todos</option>
-              <option value="unassigned">Persona: Sin asignar</option>
-              {availableUsers.map((u) => (
-                <option key={u.id} value={String(u.id)}>
-                  Persona: {u.full_name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              data-testid="board-filter-status"
-              aria-label="Filtrar por estado"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-[#323338] focus:outline-none focus:border-[#0073ea] cursor-pointer"
-            >
-              <option value="">Estado: Todos</option>
-              {activeBoard.statuses.map((st) => (
-                <option key={st.key} value={st.key}>
-                  Estado: {st.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              data-testid="board-filter-priority"
-              aria-label="Filtrar por prioridad"
-              value={filterPriority}
-              onChange={(e) => setFilterPriority(e.target.value)}
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-[#323338] focus:outline-none focus:border-[#0073ea] cursor-pointer"
-            >
-              <option value="">Prioridad: Todas</option>
-              <option value="critical">Prioridad: Crítica</option>
-              <option value="high">Prioridad: Alta</option>
-              <option value="medium">Prioridad: Media</option>
-              <option value="low">Prioridad: Baja</option>
-            </select>
-
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={handleClearFilters}
-                data-testid="btn-clear-filters"
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-[#e2445c] hover:bg-red-100 text-xs font-semibold transition-colors cursor-pointer"
-              >
-                <FilterX className="w-3.5 h-3.5" />
-                <span>Limpiar filtros</span>
-              </button>
-            )}
-          </div>
-        </div>
+        {/* Barra de Herramientas Avanzada (Toolbar 1:1 Monday.com) */}
+        <BoardToolbar
+          board={activeBoard}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          filterAssignee={filterAssignee}
+          onFilterAssigneeChange={setFilterAssignee}
+          filterStatus={filterStatus}
+          onFilterStatusChange={setFilterStatus}
+          filterPriority={filterPriority}
+          onFilterPriorityChange={setFilterPriority}
+          onClearFilters={handleClearFilters}
+          hasActiveFilters={hasActiveFilters}
+          totalMatchingItems={filteredAllItems.length}
+          availableUsers={availableUsers}
+          visibleColumns={visibleColumns}
+          onToggleColumn={handleToggleColumn}
+          onToggleAllColumns={handleToggleAllColumns}
+          sortColumn={sortColumn}
+          sortDirection={sortDirection}
+          onSortChange={handleSortChange}
+        />
 
         {/* Formulario inline para crear un Nuevo Grupo */}
         {isCreatingGroup && (
@@ -693,7 +741,9 @@ export const BoardView: React.FC = () => {
       ) : (
         <div className="space-y-8">
           {activeBoard.groups.map((group: TaskGroupRead) => {
-            const visibleItems = group.items.filter(matchesFilter);
+            const visibleItems = sortItems(
+              group.items.filter(matchesFilter),
+            );
 
             const groupTotalHours =
               Math.round(
@@ -772,34 +822,46 @@ export const BoardView: React.FC = () => {
                             </th>
 
                             {/* Columna 2: Responsable */}
-                            <th className="w-[98px] min-w-[98px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
-                              Responsable
-                            </th>
+                            {visibleColumns.assignee && (
+                              <th className="w-[98px] min-w-[98px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
+                                Responsable
+                              </th>
+                            )}
 
                             {/* Columna 3: Estado */}
-                            <th className="w-[134px] min-w-[134px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
-                              Estado
-                            </th>
+                            {visibleColumns.status && (
+                              <th className="w-[134px] min-w-[134px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
+                                Estado
+                              </th>
+                            )}
 
                             {/* Columna 4: Prioridad */}
-                            <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
-                              Prioridad
-                            </th>
+                            {visibleColumns.priority && (
+                              <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
+                                Prioridad
+                              </th>
+                            )}
 
                             {/* Columna 5: Fecha límite */}
-                            <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
-                              Fecha límite
-                            </th>
+                            {visibleColumns.due_date && (
+                              <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
+                                Fecha límite
+                              </th>
+                            )}
 
                             {/* Columna 6: Horas */}
-                            <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
-                              Horas
-                            </th>
+                            {visibleColumns.estimated_hours && (
+                              <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
+                                Horas
+                              </th>
+                            )}
 
                             {/* Columna 7: Presupuesto */}
-                            <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
-                              Presupuesto
-                            </th>
+                            {visibleColumns.budget && (
+                              <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
+                                Presupuesto
+                              </th>
+                            )}
 
                             {/* Columna 8: Acciones */}
                             <th className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 text-center border-r border-[#d0d4e4] truncate">
@@ -988,220 +1050,232 @@ export const BoardView: React.FC = () => {
                                 </td>
 
                                 {/* Columna 2: Responsable */}
-                                <td className="w-[98px] min-w-[98px] h-9 min-h-[36px] max-h-[36px] px-1.5 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
-                                  <div className="flex items-center justify-center gap-1 h-full">
-                                    {item.assignee ? (
-                                      <span
-                                        className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 shadow-2xs"
-                                        style={{
-                                          backgroundColor:
-                                            item.assignee.color || '#0073ea',
-                                        }}
-                                        title={item.assignee.full_name}
-                                      >
-                                        {getInitials(item.assignee.full_name)}
-                                      </span>
-                                    ) : (
-                                      <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shrink-0">
-                                        <UserIcon className="w-3 h-3" />
-                                      </span>
-                                    )}
+                                {visibleColumns.assignee && (
+                                  <td className="w-[98px] min-w-[98px] h-9 min-h-[36px] max-h-[36px] px-1.5 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                    <div className="flex items-center justify-center gap-1 h-full">
+                                      {item.assignee ? (
+                                        <span
+                                          className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 shadow-2xs"
+                                          style={{
+                                            backgroundColor:
+                                              item.assignee.color || '#0073ea',
+                                          }}
+                                          title={item.assignee.full_name}
+                                        >
+                                          {getInitials(item.assignee.full_name)}
+                                        </span>
+                                      ) : (
+                                        <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shrink-0">
+                                          <UserIcon className="w-3 h-3" />
+                                        </span>
+                                      )}
 
-                                    <select
-                                      data-testid={`task-assignee-select-${item.id}`}
-                                      aria-label={`Responsable de ${item.title}`}
-                                      value={
-                                        item.assignee_id !== null &&
-                                        item.assignee_id !== undefined
-                                          ? String(item.assignee_id)
-                                          : ''
-                                      }
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        if (!val) {
-                                          void handleInlineUpdate(
-                                            item.id,
-                                            { assignee_id: null },
-                                            null,
-                                          );
-                                        } else {
-                                          const uid = Number(val);
-                                          const foundUser =
-                                            availableUsers.find(
-                                              (u) => u.id === uid,
-                                            ) ?? null;
-                                          void handleInlineUpdate(
-                                            item.id,
-                                            { assignee_id: uid },
-                                            foundUser,
-                                          );
+                                      <select
+                                        data-testid={`task-assignee-select-${item.id}`}
+                                        aria-label={`Responsable de ${item.title}`}
+                                        value={
+                                          item.assignee_id !== null &&
+                                          item.assignee_id !== undefined
+                                            ? String(item.assignee_id)
+                                            : ''
                                         }
-                                      }}
-                                      className="flex-1 min-w-0 text-[11px] font-medium text-[#323338] bg-transparent border border-transparent hover:border-[#d0d4e4] focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] rounded px-1 py-0.5 focus:outline-none cursor-pointer truncate"
-                                    >
-                                      <option value="">Sin asignar</option>
-                                      {availableUsers.map((u) => (
-                                        <option key={u.id} value={String(u.id)}>
-                                          {u.full_name}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                </td>
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          if (!val) {
+                                            void handleInlineUpdate(
+                                              item.id,
+                                              { assignee_id: null },
+                                              null,
+                                            );
+                                          } else {
+                                            const uid = Number(val);
+                                            const foundUser =
+                                              availableUsers.find(
+                                                (u) => u.id === uid,
+                                              ) ?? null;
+                                            void handleInlineUpdate(
+                                              item.id,
+                                              { assignee_id: uid },
+                                              foundUser,
+                                            );
+                                          }
+                                        }}
+                                        className="flex-1 min-w-0 text-[11px] font-medium text-[#323338] bg-transparent border border-transparent hover:border-[#d0d4e4] focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] rounded px-1 py-0.5 focus:outline-none cursor-pointer truncate"
+                                      >
+                                        <option value="">Sin asignar</option>
+                                        {availableUsers.map((u) => (
+                                          <option key={u.id} value={String(u.id)}>
+                                            {u.full_name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </td>
+                                )}
 
                                 {/* Columna 3: Estado */}
-                                <td className="w-[134px] min-w-[134px] h-9 min-h-[36px] max-h-[36px] p-0.5 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
-                                  <StatusCell
-                                    itemId={item.id}
-                                    itemTitle={item.title}
-                                    statusKey={item.status_key}
-                                    statuses={activeBoard.statuses}
-                                    onSelectStatus={(newKey) =>
-                                      void handleInlineUpdate(item.id, {
-                                        status_key: newKey,
-                                      })
-                                    }
-                                    onEditLabels={() => setIsStatusModalOpen(true)}
-                                  />
-                                </td>
+                                {visibleColumns.status && (
+                                  <td className="w-[134px] min-w-[134px] h-9 min-h-[36px] max-h-[36px] p-0.5 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                    <StatusCell
+                                      itemId={item.id}
+                                      itemTitle={item.title}
+                                      statusKey={item.status_key}
+                                      statuses={activeBoard.statuses}
+                                      onSelectStatus={(newKey) =>
+                                        void handleInlineUpdate(item.id, {
+                                          status_key: newKey,
+                                        })
+                                      }
+                                      onEditLabels={() => setIsStatusModalOpen(true)}
+                                    />
+                                  </td>
+                                )}
 
                                 {/* Columna 4: Prioridad */}
-                                <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] p-0.5 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
-                                  <div className="relative w-full h-full flex items-center justify-center">
-                                    <div
-                                      data-testid={`task-priority-badge-${item.id}`}
-                                      className="w-full h-7 rounded text-center text-xs font-semibold shadow-2xs truncate flex items-center justify-center px-2 pointer-events-none"
-                                      style={{
-                                        backgroundColor: priorityMeta.bgColor,
-                                        color: priorityMeta.textColor,
-                                      }}
-                                    >
-                                      {priorityMeta.label}
-                                    </div>
-                                    <select
-                                      data-testid={`task-priority-select-${item.id}`}
-                                      aria-label={`Prioridad de ${item.title}`}
-                                      value={item.priority.toLowerCase()}
-                                      onChange={(e) =>
-                                        void handleInlineUpdate(item.id, {
-                                          priority: e.target.value,
-                                        })
-                                      }
-                                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    >
-                                      <option value="critical">Crítica</option>
-                                      <option value="high">Alta</option>
-                                      <option value="medium">Media</option>
-                                      <option value="low">Baja</option>
-                                    </select>
-                                  </div>
-                                </td>
-
-                                {/* Columna 5: Fecha límite */}
-                                <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-1 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
-                                  <div className="flex items-center justify-center gap-1 h-full">
-                                    <Calendar
-                                      className={`w-3 h-3 shrink-0 ${
-                                        isOverdue
-                                          ? 'text-[#e2445c]'
-                                          : 'text-[#0073ea]'
-                                      }`}
-                                    />
-                                    <input
-                                      type="date"
-                                      data-testid={`task-duedate-input-${item.id}`}
-                                      aria-label={`Fecha límite de ${item.title}`}
-                                      value={item.due_date ?? ''}
-                                      onChange={(e) =>
-                                        void handleInlineUpdate(item.id, {
-                                          due_date: e.target.value || null,
-                                        })
-                                      }
-                                      className={`text-[11px] font-medium rounded px-1 h-6 border border-transparent hover:border-[#d0d4e4] focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] focus:outline-none cursor-pointer ${
-                                        isOverdue
-                                          ? 'text-[#e2445c] font-semibold bg-red-50'
-                                          : 'text-[#323338] bg-transparent'
-                                      }`}
-                                    />
-                                    {item.due_date && (
-                                      <button
-                                        type="button"
-                                        onClick={() =>
+                                {visibleColumns.priority && (
+                                  <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] p-0.5 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                    <div className="relative w-full h-full flex items-center justify-center">
+                                      <div
+                                        data-testid={`task-priority-badge-${item.id}`}
+                                        className="w-full h-7 rounded text-center text-xs font-semibold shadow-2xs truncate flex items-center justify-center px-2 pointer-events-none"
+                                        style={{
+                                          backgroundColor: priorityMeta.bgColor,
+                                          color: priorityMeta.textColor,
+                                        }}
+                                      >
+                                        {priorityMeta.label}
+                                      </div>
+                                      <select
+                                        data-testid={`task-priority-select-${item.id}`}
+                                        aria-label={`Prioridad de ${item.title}`}
+                                        value={item.priority.toLowerCase()}
+                                        onChange={(e) =>
                                           void handleInlineUpdate(item.id, {
-                                            due_date: null,
+                                            priority: e.target.value,
                                           })
                                         }
-                                        data-testid={`task-duedate-clear-${item.id}`}
-                                        aria-label={`Limpiar fecha de ${item.title}`}
-                                        title="Limpiar fecha límite"
-                                        className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-[#323338] cursor-pointer"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                       >
-                                        <X className="w-2.5 h-2.5" />
-                                      </button>
-                                    )}
-                                    {isOverdue && (
-                                      <span
-                                        data-testid={`task-overdue-badge-${item.id}`}
-                                        className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded bg-red-100 text-[#e2445c] text-[9px] font-bold"
-                                      >
-                                        <AlertTriangle className="w-2.5 h-2.5" />
-                                        <span>Vencida</span>
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
+                                        <option value="critical">Crítica</option>
+                                        <option value="high">Alta</option>
+                                        <option value="medium">Media</option>
+                                        <option value="low">Baja</option>
+                                      </select>
+                                    </div>
+                                  </td>
+                                )}
+
+                                {/* Columna 5: Fecha límite */}
+                                {visibleColumns.due_date && (
+                                  <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-1 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                    <div className="flex items-center justify-center gap-1 h-full">
+                                      <Calendar
+                                        className={`w-3 h-3 shrink-0 ${
+                                          isOverdue
+                                            ? 'text-[#e2445c]'
+                                            : 'text-[#0073ea]'
+                                        }`}
+                                      />
+                                      <input
+                                        type="date"
+                                        data-testid={`task-duedate-input-${item.id}`}
+                                        aria-label={`Fecha límite de ${item.title}`}
+                                        value={item.due_date ?? ''}
+                                        onChange={(e) =>
+                                          void handleInlineUpdate(item.id, {
+                                            due_date: e.target.value || null,
+                                          })
+                                        }
+                                        className={`text-[11px] font-medium rounded px-1 h-6 border border-transparent hover:border-[#d0d4e4] focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] focus:outline-none cursor-pointer ${
+                                          isOverdue
+                                            ? 'text-[#e2445c] font-semibold bg-red-50'
+                                            : 'text-[#323338] bg-transparent'
+                                        }`}
+                                      />
+                                      {item.due_date && (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            void handleInlineUpdate(item.id, {
+                                              due_date: null,
+                                            })
+                                          }
+                                          data-testid={`task-duedate-clear-${item.id}`}
+                                          aria-label={`Limpiar fecha de ${item.title}`}
+                                          title="Limpiar fecha límite"
+                                          className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-[#323338] cursor-pointer"
+                                        >
+                                          <X className="w-2.5 h-2.5" />
+                                        </button>
+                                      )}
+                                      {isOverdue && (
+                                        <span
+                                          data-testid={`task-overdue-badge-${item.id}`}
+                                          className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded bg-red-100 text-[#e2445c] text-[9px] font-bold"
+                                        >
+                                          <AlertTriangle className="w-2.5 h-2.5" />
+                                          <span>Vencida</span>
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                )}
 
                                 {/* Columna 6: Horas */}
-                                <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
-                                  <div className="inline-flex items-center justify-center gap-1 h-full">
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      step="0.5"
-                                      data-testid={`task-hours-input-${item.id}`}
-                                      aria-label={`Horas estimadas de ${item.title}`}
-                                      value={item.estimated_hours ?? 0}
-                                      onChange={(e) => {
-                                        const val = Number(e.target.value);
-                                        if (!Number.isNaN(val) && val >= 0) {
-                                          void handleInlineUpdate(item.id, {
-                                            estimated_hours: val,
-                                          });
-                                        }
-                                      }}
-                                      className="w-16 h-7 text-right text-xs font-semibold text-[#323338] bg-transparent border border-transparent hover:border-[#d0d4e4] focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] rounded px-1.5 focus:outline-none"
-                                    />
-                                    <span className="text-[11px] font-medium text-[#676879]">
-                                      h
-                                    </span>
-                                  </div>
-                                </td>
+                                {visibleColumns.estimated_hours && (
+                                  <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                    <div className="inline-flex items-center justify-center gap-1 h-full">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="0.5"
+                                        data-testid={`task-hours-input-${item.id}`}
+                                        aria-label={`Horas estimadas de ${item.title}`}
+                                        value={item.estimated_hours ?? 0}
+                                        onChange={(e) => {
+                                          const val = Number(e.target.value);
+                                          if (!Number.isNaN(val) && val >= 0) {
+                                            void handleInlineUpdate(item.id, {
+                                              estimated_hours: val,
+                                            });
+                                          }
+                                        }}
+                                        className="w-16 h-7 text-right text-xs font-semibold text-[#323338] bg-transparent border border-transparent hover:border-[#d0d4e4] focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] rounded px-1.5 focus:outline-none"
+                                      />
+                                      <span className="text-[11px] font-medium text-[#676879]">
+                                        h
+                                      </span>
+                                    </div>
+                                  </td>
+                                )}
 
                                 {/* Columna 7: Presupuesto */}
-                                <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
-                                  <div className="inline-flex items-center justify-center gap-1 h-full">
-                                    <span className="text-[11px] font-semibold text-[#676879]">
-                                      $
-                                    </span>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      step="100"
-                                      data-testid={`task-budget-input-${item.id}`}
-                                      aria-label={`Presupuesto de ${item.title}`}
-                                      value={item.budget ?? 0}
-                                      onChange={(e) => {
-                                        const val = Number(e.target.value);
-                                        if (!Number.isNaN(val) && val >= 0) {
-                                          void handleInlineUpdate(item.id, {
-                                            budget: val,
-                                          });
-                                        }
-                                      }}
-                                      className="w-20 h-7 text-right text-xs font-semibold text-[#323338] bg-transparent border border-transparent hover:border-[#d0d4e4] focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] rounded px-1.5 focus:outline-none"
-                                    />
-                                  </div>
-                                </td>
+                                {visibleColumns.budget && (
+                                  <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                    <div className="inline-flex items-center justify-center gap-1 h-full">
+                                      <span className="text-[11px] font-semibold text-[#676879]">
+                                        $
+                                      </span>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="100"
+                                        data-testid={`task-budget-input-${item.id}`}
+                                        aria-label={`Presupuesto de ${item.title}`}
+                                        value={item.budget ?? 0}
+                                        onChange={(e) => {
+                                          const val = Number(e.target.value);
+                                          if (!Number.isNaN(val) && val >= 0) {
+                                            void handleInlineUpdate(item.id, {
+                                              budget: val,
+                                            });
+                                          }
+                                        }}
+                                        className="w-20 h-7 text-right text-xs font-semibold text-[#323338] bg-transparent border border-transparent hover:border-[#d0d4e4] focus:border-[#0073ea] focus:ring-1 focus:ring-[#0073ea] rounded px-1.5 focus:outline-none"
+                                      />
+                                    </div>
+                                  </td>
+                                )}
 
                                 {/* Columna 8: Acciones */}
                                 <td className="w-[140px] min-w-[140px] h-9 min-h-[36px] max-h-[36px] px-1 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
@@ -1264,7 +1338,12 @@ export const BoardView: React.FC = () => {
                           {visibleItems.length === 0 && (
                             <tr className="h-9 min-h-[36px] max-h-[36px] border-b border-[#d0d4e4]">
                               <td
-                                colSpan={9}
+                                colSpan={
+                                  2 +
+                                  Object.values(visibleColumns).filter(Boolean)
+                                    .length +
+                                  1
+                                }
                                 className="h-9 min-h-[36px] max-h-[36px] py-1 px-4 text-center text-xs text-[#676879] italic border-r border-[#d0d4e4]"
                               >
                                 {hasActiveFilters
@@ -1277,7 +1356,12 @@ export const BoardView: React.FC = () => {
                           {/* Fila rápida estilo Monday: "+ Agregar tarea..." */}
                           <tr className="h-9 min-h-[36px] max-h-[36px] leading-[36px] bg-[#fafbfc] hover:bg-[#f6f7fb] transition-colors border-b border-[#d0d4e4]">
                             <td
-                              colSpan={9}
+                              colSpan={
+                                2 +
+                                Object.values(visibleColumns).filter(Boolean)
+                                  .length +
+                                1
+                              }
                               className="h-9 min-h-[36px] max-h-[36px] py-0 px-3 border-r border-[#d0d4e4]"
                             >
                               <div className="flex items-center gap-2 h-full">
@@ -1323,6 +1407,7 @@ export const BoardView: React.FC = () => {
                           statuses={activeBoard.statuses}
                           groupTotalHours={groupTotalHours}
                           groupTotalBudget={groupTotalBudget}
+                          visibleColumns={visibleColumns}
                         />
                       </table>
                     </div>
