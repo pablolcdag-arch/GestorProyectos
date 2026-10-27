@@ -94,10 +94,45 @@ def ensure_phase3_schema(target_engine: Engine) -> None:
             )
 
 
+def ensure_billing_schema(target_engine: Engine) -> None:
+    """Garantiza la creación de la tabla subscriptions si no existe en bases preexistentes."""
+    inspector = inspect(target_engine)
+    if "subscriptions" not in inspector.get_table_names():
+        is_sqlite = target_engine.dialect.name == "sqlite"
+        pk_type = "INTEGER PRIMARY KEY AUTOINCREMENT" if is_sqlite else "SERIAL PRIMARY KEY"
+        with target_engine.begin() as conn:
+            conn.execute(
+                text(
+                    f"""
+                    CREATE TABLE IF NOT EXISTS subscriptions (
+                        id {pk_type},
+                        user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+                        plan_tier VARCHAR(50) NOT NULL DEFAULT 'free_trial',
+                        status VARCHAR(50) NOT NULL DEFAULT 'trialing',
+                        stripe_customer_id VARCHAR(255),
+                        stripe_subscription_id VARCHAR(255),
+                        billing_cycle VARCHAR(20) NOT NULL DEFAULT 'monthly',
+                        seats INTEGER NOT NULL DEFAULT 1,
+                        trial_ends_at TIMESTAMP,
+                        current_period_end TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
+            )
+            conn.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS ix_subscriptions_user_id ON subscriptions(user_id)"
+                )
+            )
+
+
 def ensure_schema_migrations(target_engine: Engine) -> None:
     """Aplica todas las migraciones defensivas para bases de datos preexistentes."""
     ensure_phase2_schema(target_engine)
     ensure_phase3_schema(target_engine)
+    ensure_billing_schema(target_engine)
 
 
 def get_db() -> Generator[Session, None, None]:

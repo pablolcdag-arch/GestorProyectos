@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
@@ -14,6 +14,11 @@ from app.database import Base
 def utc_now() -> datetime:
     """Devuelve la fecha y hora actual en UTC con timezone."""
     return datetime.now(timezone.utc)
+
+
+def trial_end_default() -> datetime:
+    """Calcula 14 días a partir de ahora en UTC para el período de prueba."""
+    return datetime.now(timezone.utc) + timedelta(days=14)
 
 
 DEFAULT_BOARD_STATUSES: list[dict[str, str | int]] = [
@@ -47,6 +52,58 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now
     )
+
+    subscription: Mapped[Optional["Subscription"]] = relationship(
+        "Subscription",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+
+class Subscription(Base):
+    """Suscripción SaaS y control de plan comercial asociado al usuario."""
+
+    __tablename__ = "subscriptions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+    plan_tier: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="free_trial"
+    )
+    status: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="trialing"
+    )
+    stripe_customer_id: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, default=None
+    )
+    stripe_subscription_id: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, default=None
+    )
+    billing_cycle: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="monthly"
+    )
+    seats: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    trial_ends_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=trial_end_default
+    )
+    current_period_end: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
+    )
+
+    user: Mapped["User"] = relationship("User", back_populates="subscription")
 
 
 class Workspace(Base):

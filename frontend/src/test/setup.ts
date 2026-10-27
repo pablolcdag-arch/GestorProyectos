@@ -2,6 +2,7 @@ import '@testing-library/jest-dom';
 import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { useAuthStore } from '../store/useAuthStore';
+import { useBillingStore } from '../store/useBillingStore';
 import { useWorkspaceStore } from '../store/useWorkspaceStore';
 
 function createMemoryStorage(): Storage {
@@ -75,5 +76,6 @@ afterEach(() => {
   sessionStorage.clear();
   useAuthStore.getState().resetStore();
   useWorkspaceStore.getState().resetStore();
+  useBillingStore.getState().resetStore();
 });
 

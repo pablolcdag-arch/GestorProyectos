@@ -10,6 +10,7 @@ from app.models import (
     Board,
     BoardAutomation,
     BoardStatusConfig,
+    Subscription,
     TaskActivityLog,
     TaskChecklistItem,
     TaskComment,
@@ -101,6 +102,22 @@ def seed_initial_data(db: Session) -> None:
                     )
                 dirty = True
 
+        # Asegurar suscripción de prueba para usuarios preexistentes si no tienen
+        if db.query(Subscription).count() == 0:
+            now = datetime.now(timezone.utc)
+            for u in db.query(User).all():
+                db.add(
+                    Subscription(
+                        user_id=u.id,
+                        plan_tier="free_trial",
+                        status="trialing",
+                        billing_cycle="monthly",
+                        seats=1,
+                        trial_ends_at=now + timedelta(days=14),
+                    )
+                )
+            dirty = True
+
         if dirty:
             db.commit()
         return
@@ -143,6 +160,21 @@ def seed_initial_data(db: Session) -> None:
         is_active=True,
     )
     db.add_all([ana, carlos, lucia, martin])
+    db.flush()
+
+    # Suscripciones iniciales para el equipo
+    now_seed = datetime.now(timezone.utc)
+    for u in (ana, carlos, lucia, martin):
+        db.add(
+            Subscription(
+                user_id=u.id,
+                plan_tier="free_trial",
+                status="trialing",
+                billing_cycle="monthly",
+                seats=1,
+                trial_ends_at=now_seed + timedelta(days=14),
+            )
+        )
     db.flush()
 
     # 2. Crear los 2 Workspaces iniciales

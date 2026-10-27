@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ChevronDown,
   LayoutGrid,
@@ -6,8 +6,10 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useBillingStore } from '../../store/useBillingStore';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { GoogleLogoSvg, MicrosoftLogoSvg } from '../auth/LoginScreen';
 import type { DevAccountInfo } from '../../types';
@@ -66,8 +68,16 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const { user, providers, loginWithCallback, logout } = useAuthStore();
   const { workspaces, activeWorkspaceId, activeBoard, resetStore } =
     useWorkspaceStore();
+  const { subscription, openPricingModal, loadBillingInfo } =
+    useBillingStore();
 
   const [switcherOpen, setSwitcherOpen] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      void loadBillingInfo();
+    }
+  }, [user, loadBillingInfo]);
 
   const activeWorkspace = workspaces.find((ws) => ws.id === activeWorkspaceId);
 
@@ -153,6 +163,31 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       {/* Lado derecho: Selector rápido dev + Perfil de usuario + Cerrar sesión */}
       {user && (
         <div className="flex items-center gap-3">
+          {/* Botón Ver planes y badge de días de prueba */}
+          <div className="flex items-center gap-2">
+            {(subscription?.status === 'trialing' ||
+              subscription?.plan_tier === 'free_trial' ||
+              (typeof subscription?.trial_days_left === 'number' &&
+                subscription.trial_days_left > 0)) && (
+              <span
+                data-testid="badge-trial-days"
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+              >
+                {subscription?.trial_days_left ?? 14} días de prueba
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={openPricingModal}
+              data-testid="btn-view-plans"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#0073ea]/30 bg-[#f0f7ff] hover:bg-[#e1f0ff] text-xs font-semibold text-[#0073ea] transition-all cursor-pointer shadow-xs"
+              title="Ver planes y facturación"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#0073ea]" />
+              <span>Ver planes</span>
+            </button>
+          </div>
+
           {/* Selector rápido de usuario en modo dev */}
           {isDevMode && (
             <div className="relative">

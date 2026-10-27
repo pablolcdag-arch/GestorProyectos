@@ -41,6 +41,9 @@ class Settings:
         "MICROSOFT_TENANT_ID": "common",
         "CORS_ORIGINS": "*",
         "SEED_DEMO_DATA": True,
+        "STRIPE_SECRET_KEY": "",
+        "STRIPE_WEBHOOK_SECRET": "",
+        "BILLING_DEV_MODE": True,
     }
 
     def __init__(self) -> None:

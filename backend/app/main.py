@@ -14,6 +14,7 @@ from app.database import Base, ensure_schema_migrations
 from app.routers import (
     auth_router,
     automations_router,
+    billing_router,
     boards_router,
     groups_items_router,
     item_collaboration_router,
@@ -67,6 +68,7 @@ app.include_router(groups_items_router.router)
 app.include_router(item_collaboration_router.router)
 app.include_router(automations_router.router)
 app.include_router(my_work_router.router)
+app.include_router(billing_router.router)
 
 
 @app.get("/api/health", tags=["Health"])

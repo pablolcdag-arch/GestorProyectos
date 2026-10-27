@@ -20,6 +20,7 @@ from app.models import (
     Board,
     BoardAutomation,
     BoardStatusConfig,
+    Subscription,
     TaskGroup,
     TaskItem,
     User,
@@ -436,6 +437,21 @@ def upsert_oauth_user(db: Session, provider: str, profile: dict[str, Any]) -> Us
 
 def ensure_user_default_workspace(db: Session, user: User) -> None:
     """Asegura que un nuevo usuario posea al menos un Espacio de Trabajo limpio y el Tablero oficial de bienvenida."""
+    # Asegurar que el usuario posea su registro de suscripción inicial (Free Trial de 14 días)
+    sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
+    if not sub:
+        now = datetime.now(timezone.utc)
+        sub = Subscription(
+            user_id=user.id,
+            plan_tier="free_trial",
+            status="trialing",
+            billing_cycle="monthly",
+            seats=1,
+            trial_ends_at=now + timedelta(days=14),
+        )
+        db.add(sub)
+        db.commit()
+
     user_ws = db.query(Workspace).filter(Workspace.owner_id == user.id).first()
     if not user_ws:
         user_ws = Workspace(

@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { LoginScreen } from './components/auth/LoginScreen';
+import { PricingModal } from './components/billing/PricingModal';
 import { BoardView } from './components/board/BoardView';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopHeader } from './components/layout/TopHeader';
 import { MyWorkView } from './components/mywork/MyWorkView';
 import { useAuthStore } from './store/useAuthStore';
+import { useBillingStore } from './store/useBillingStore';
 import { useWorkspaceStore } from './store/useWorkspaceStore';
 
 export const App: React.FC = () => {
   const { user, restoreSession } = useAuthStore();
   const { loadWorkspaces, currentViewMode } = useWorkspaceStore();
+  const { loadBillingInfo } = useBillingStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
@@ -19,8 +22,9 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (user) {
       void loadWorkspaces();
+      void loadBillingInfo();
     }
-  }, [user, loadWorkspaces]);
+  }, [user, loadWorkspaces, loadBillingInfo]);
 
   if (!user) {
     return <LoginScreen />;
@@ -36,6 +40,7 @@ export const App: React.FC = () => {
         <Sidebar collapsed={sidebarCollapsed} />
         {currentViewMode === 'my-work' ? <MyWorkView /> : <BoardView />}
       </div>
+      <PricingModal />
     </div>
   );
 };

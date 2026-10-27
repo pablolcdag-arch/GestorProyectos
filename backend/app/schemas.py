@@ -751,4 +751,130 @@ class MyWorkResponse(BaseModel):
     completed: list[MyWorkItemRead]
 
 
+# ============================================================================
+# Esquemas y Catálogo de Planes de Facturación / Suscripciones SaaS (Billing)
+# ============================================================================
+
+OFFICIAL_PRICING_PLANS: list[dict[str, Any]] = [
+    {
+        "tier": "basic",
+        "name": "Básico",
+        "monthly_price": 4.5,
+        "yearly_price": 45.0,
+        "features": [
+            "Tableros ilimitados",
+            "Vistas básicas (Tabla, Kanban)",
+            "500 créditos IA / mes",
+            "Hasta 5 GB de almacenamiento",
+        ],
+        "is_popular": False,
+    },
+    {
+        "tier": "standard",
+        "name": "Estándar",
+        "monthly_price": 6.0,
+        "yearly_price": 60.0,
+        "features": [
+            "Todo lo de Básico",
+            "Vistas Cronograma y Calendario",
+            "250 automatizaciones / mes",
+            "2,000 créditos IA / mes",
+            "Integraciones estándar",
+        ],
+        "is_popular": False,
+    },
+    {
+        "tier": "pro",
+        "name": "Pro",
+        "monthly_price": 9.5,
+        "yearly_price": 95.0,
+        "features": [
+            "Todo lo de Estándar",
+            "25,000 automatizaciones / mes",
+            "IA completa ilimitada",
+            "Columnas numéricas, fórmulas y analítica avanzada",
+            "Soporte prioritario 24/7",
+        ],
+        "is_popular": True,
+    },
+    {
+        "tier": "enterprise",
+        "name": "Enterprise",
+        "monthly_price": None,
+        "yearly_price": None,
+        "features": [
+            "Seguridad y gobernanza corporativa",
+            "SSO avanzado / SAML",
+            "Auditoría completa",
+            "SLA del 99.9% y soporte dedicado",
+        ],
+        "is_popular": False,
+    },
+]
+
+
+class PricingPlanRead(BaseModel):
+    """Representación de un plan de precios y suscripción comercial."""
+
+    tier: str
+    name: str
+    monthly_price: Optional[float]
+    yearly_price: Optional[float]
+    features: list[str]
+    is_popular: bool = False
+
+
+class SubscriptionRead(BaseModel):
+    """Representación del estado y período de la suscripción del usuario."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    plan_tier: str
+    status: str
+    stripe_customer_id: Optional[str] = None
+    stripe_subscription_id: Optional[str] = None
+    billing_cycle: str
+    seats: int
+    trial_ends_at: Optional[datetime] = None
+    current_period_end: Optional[datetime] = None
+    days_left_in_trial: int = 0
+    is_trial_active: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+
+class CheckoutSessionCreate(BaseModel):
+    """Payload para iniciar o simular un proceso de checkout de suscripción."""
+
+    plan_tier: str
+    billing_cycle: str = "monthly"
+
+    @field_validator("plan_tier")
+    @classmethod
+    def check_plan_tier(cls, v: str) -> str:
+        valid = {"basic", "standard", "pro"}
+        if v not in valid:
+            raise ValueError(f"plan_tier debe ser uno de: {sorted(valid)}")
+        return v
+
+    @field_validator("billing_cycle")
+    @classmethod
+    def check_billing_cycle(cls, v: str) -> str:
+        valid = {"monthly", "yearly"}
+        if v not in valid:
+            raise ValueError(f"billing_cycle debe ser uno de: {sorted(valid)}")
+        return v
+
+
+class CheckoutSessionResponse(BaseModel):
+    """Respuesta con URL de checkout Stripe o confirmación simulada."""
+
+    checkout_url: Optional[str] = None
+    mode: str
+    success: bool = True
+
+
+
 

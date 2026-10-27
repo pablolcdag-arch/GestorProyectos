@@ -461,3 +461,40 @@ export const GROUP_COLOR_PALETTE: string[] = [
   '#9cd326',
   '#7f5347',
 ];
+
+// Facturación y Suscripciones (SaaS)
+export type PlanTier =
+  | 'free_trial'
+  | 'basic'
+  | 'standard'
+  | 'pro'
+  | 'enterprise';
+
+export interface PricingPlanRead {
+  tier: PlanTier;
+  name: string;
+  badge?: string | null;
+  monthly_price: number;
+  yearly_price_per_month: number;
+  features: string[];
+  description?: string;
+  is_popular?: boolean;
+  cta_label?: string;
+}
+
+export interface SubscriptionRead {
+  id: number;
+  user_id: number;
+  plan_tier: PlanTier;
+  billing_cycle: 'monthly' | 'yearly';
+  status: 'active' | 'trialing' | 'canceled' | 'past_due' | string;
+  trial_days_left?: number | null;
+  current_period_end?: string | null;
+  created_at?: string;
+}
+
+export interface CheckoutSessionResponse {
+  checkout_url?: string | null;
+  subscription: SubscriptionRead;
+  message?: string;
+}

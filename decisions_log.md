@@ -275,6 +275,28 @@
 - **Razón:** Garantizar que cualquier usuario nuevo o potencial cliente que ingrese con Google OAuth experimente de inmediato la interfaz completa de Monday.com precargada sin fricción, sin parpadeos ni estados vacíos.
 - **Impacto:** Auditoría técnica independiente de los Verificadores Backend y Frontend con veredicto **APROBADO ✅** en ambos roles, **81 pruebas automatizadas pasando al 100%** (**31 en Pytest + 50 en Vitest**) y compilación de producción limpia.
 
+---
+
+## [27/10/2026] — Sprint Paso 1: Motor de Suscripciones, Planes SaaS y Facturación 1:1 Monday.com
+- **Decisión:**
+  1. **Modelo de Negocio y Precios al 50% de Monday.com:**
+     - Se establece la estructura comercial SaaS orientada a equipos y PyMEs sin mínimos abusivos de usuarios:
+       - **Básico:** \$4.50 USD / usuario / mes (\$45 / año).
+       - **Estándar:** \$6.00 USD / usuario / mes (\$60 / año).
+       - **Pro (Plan de Prueba / Más popular):** \$9.50 USD / usuario / mes (\$95 / año).
+       - **Enterprise:** Personalizado.
+     - Período de prueba gratuito (**Free Trial de 14 días**) automático para nuevos usuarios sin requerir tarjeta de crédito.
+  2. **Arquitectura Backend (`backend/app/`):**
+     - Se implementa el modelo `Subscription` (1:1 con `User`), migración idempotente de base de datos en `database.py` y configuración `BILLING_DEV_MODE` en `config.py`.
+     - Router `billing_router.py` con `GET /api/billing/plans`, `GET /api/billing/subscription` (cálculo de días restantes de prueba), `POST /api/billing/checkout` (checkout simulado determinístico o Stripe Checkout) y `POST /api/billing/webhook`.
+     - En `auth.py`, aprovisionamiento automático de `Subscription` con plan `free_trial` y 14 días para todo nuevo usuario autenticado.
+  3. **Arquitectura Frontend (`frontend/src/`):**
+     - Store Zustand `useBillingStore.ts` para gestión reactiva de suscripciones, ciclo anual (-20%) / mensual y checkout.
+     - Modal `PricingModal.tsx` con diseño 1:1 a la captura oficial de Monday.com: 4 tarjetas de planes, selector anual/mensual, tarjeta Pro destacada con bordes azules `#0073ea`, badges "Más popular" y "Plan de prueba", y botón de upgrade.
+     - En `TopHeader.tsx`, botón oficial "Ver planes" con ícono de gema azul y badge reactivo de días restantes de prueba.
+- **Razón:** Proveer la infraestructura comercial completa para monetizar la plataforma como una alternativa asequible y premium frente a Monday.com.
+- **Impacto:** Auditoría técnica independiente de los Verificadores Backend y Frontend con veredicto **APROBADO ✅** en ambos roles, **91 pruebas automatizadas pasando al 100%** (**37 en Pytest + 54 en Vitest**) y compilación de producción de Vite limpia en 1.23s.
+
 
 
 

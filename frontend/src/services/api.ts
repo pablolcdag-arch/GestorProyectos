@@ -9,11 +9,14 @@ import type {
   BoardStatusRead,
   BoardStatusUpdate,
   BoardUpdate,
+  CheckoutSessionResponse,
   DeleteBoardStatusResponse,
   MyWorkResponse,
   OAuthAuthorizeResponse,
   OAuthCallbackRequest,
   OAuthProviderConfig,
+  PricingPlanRead,
+  SubscriptionRead,
   TaskChecklistCreate,
   TaskChecklistItemRead,
   TaskChecklistUpdate,
@@ -469,5 +472,27 @@ export const api = {
         method: 'DELETE',
       },
     );
+  },
+
+  // Suscripciones y Facturación (SaaS)
+  getBillingPlans(): Promise<PricingPlanRead[]> {
+    return request<PricingPlanRead[]>('/api/billing/plans');
+  },
+
+  getMySubscription(): Promise<SubscriptionRead> {
+    return request<SubscriptionRead>('/api/billing/subscription');
+  },
+
+  createCheckoutSession(
+    planTier: string,
+    billingCycle: 'monthly' | 'yearly',
+  ): Promise<CheckoutSessionResponse> {
+    return request<CheckoutSessionResponse>('/api/billing/checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        plan_tier: planTier,
+        billing_cycle: billingCycle,
+      }),
+    });
   },
 };
