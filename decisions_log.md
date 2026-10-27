@@ -220,6 +220,21 @@
 - **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.15s, 41/41 tests en Vitest y 29/29 tests en Pytest pasando al 100% (70 tests en verde sin regresiones).
 - **Impacto:** Herramientas de exploración, ordenamiento y personalización de vista ultra-rápidas con diseño Monday.com.
 
+---
+
+## [26/10/2026] — Sprint 7: Panel Lateral de Detalle (Item Drawer 668px con WYSIWYG y Actividad) 1:1 Monday.com
+- **Decisión:**
+  1. **Rediseño Dimensional y Estilístico (668px):**
+     - Se ajusta `ItemDetailDrawer.tsx` al ancho exacto de Monday.com (`w-[668px] max-w-[90vw]`) con sombra perimetral suave `shadow-[-8px_0_30px_rgba(0,0,0,0.15)]` y título editable de 24px.
+  2. **Navegación por Pestañas con Indicador Azul:**
+     - Se organizan las secciones en tabs estilizadas: `Actualizaciones`, `Actividad` y `Checklist` con borde inferior azul `#0073ea` en la pestaña activa.
+  3. **Editor WYSIWYG Expandible y Timeline Inmutable:**
+     - En `Actualizaciones`, se implementa el editor expandible al hacer foco con barra de herramientas de formato (negrita, cursiva, subrayado, listas y menciones `@`), botón "Publicar" y feed cronológico con timestamps relativos.
+     - En `Actividad`, se muestra la línea de tiempo inmutable con avatares e historial de eventos.
+- **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.15s, 44/44 tests en Vitest y 29/29 tests en Pytest pasando al 100% (73 tests en verde sin regresiones).
+- **Impacto:** Experiencia colaborativa profunda por tarea idéntica a Monday.com.
+
+
 
 
 
