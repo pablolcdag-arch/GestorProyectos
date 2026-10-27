@@ -44,6 +44,9 @@ class Settings:
         "STRIPE_SECRET_KEY": "",
         "STRIPE_WEBHOOK_SECRET": "",
         "BILLING_DEV_MODE": True,
+        "GEMINI_API_KEY": "",
+        "OPENAI_API_KEY": "",
+        "AI_DEV_MODE": True,
     }
 
     def __init__(self) -> None:

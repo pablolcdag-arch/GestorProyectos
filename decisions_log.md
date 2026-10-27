@@ -297,6 +297,23 @@
 - **Razón:** Proveer la infraestructura comercial completa para monetizar la plataforma como una alternativa asequible y premium frente a Monday.com.
 - **Impacto:** Auditoría técnica independiente de los Verificadores Backend y Frontend con veredicto **APROBADO ✅** en ambos roles, **91 pruebas automatizadas pasando al 100%** (**37 en Pytest + 54 en Vitest**) y compilación de producción de Vite limpia en 1.23s.
 
+---
+
+## [27/10/2026] — Sprint Paso 2: Asistente de IA Nativo Sidekick ("Preguntar, crear, analizar") 1:1 Monday.com
+- **Decisión:**
+  1. **Motor de Inteligencia Artificial Desacoplado (`backend/app/`):**
+     - En `config.py`, se añaden variables para `GEMINI_API_KEY`, `OPENAI_API_KEY` y `AI_DEV_MODE=true` (simulador determinístico inteligente sin costo de tokens para pruebas continuas).
+     - En `ai_service.py` y `ai_router.py`, se implementa el endpoint `POST /api/ai/ask` con soporte para:
+       - `generate_tasks`: Generación e inserción directa de tareas contextuales con horas y presupuesto en el tablero activo.
+       - `breakdown_checklist`: Generación automática de subtareas en `TaskChecklistItem` para una tarea específica.
+       - `summarize_board`: Análisis ejecutivo con KPIs del tablero formateado en Markdown.
+     - En `GET /api/ai/credits`, se expone la cuota mensual de créditos de IA ligada al plan de suscripción del usuario.
+  2. **Interfaz de Usuario 1:1 Monday.com (`frontend/src/`):**
+     - Se crea el componente `AIAssistantBar.tsx`: cápsula inferior fija ("Preguntar, crear, analizar") con ícono `Sparkles` en degradado multicolor (`#00c875` -> `#0073ea` -> `#a25ddc`), panel expandible accesible con chips de sugerencias rápidas ("Crear tareas de lanzamiento", "Resumir estado y presupuesto", "Dividir en checklist") y sincronización reactiva con `loadBoard`.
+     - Se integra la píldora en `BoardView.tsx` (ocultándose defensivamente ante selecciones masivas de la batch bar) y el botón "✨ Desglosar con IA" en la pestaña de Checklist de `ItemDetailDrawer.tsx`.
+- **Razón:** Ofrecer inteligencia artificial integrada y nativa como valor diferencial clave frente a las costosas tarifas de IA de Monday.com.
+- **Impacto:** Auditoría técnica independiente de los Verificadores Backend y Frontend con veredicto **APROBADO ✅** en ambos roles, **100 pruebas automatizadas pasando al 100%** (**42 en Pytest + 58 en Vitest**) y compilación de producción de Vite limpia en 1.06s.
+
 
 
 

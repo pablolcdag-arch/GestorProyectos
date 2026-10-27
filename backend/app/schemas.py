@@ -876,5 +876,77 @@ class CheckoutSessionResponse(BaseModel):
     success: bool = True
 
 
+# ============================================================================
+# Esquemas para el Asistente de IA ("Sidekick" estilo Monday.com)
+# ============================================================================
+
+VALID_AI_ACTIONS: set[str] = {
+    "generate_tasks",
+    "generate_board",
+    "breakdown_checklist",
+    "summarize_board",
+}
+
+
+class AIPromptRequest(BaseModel):
+    """Payload de solicitud para interactuar con el asistente de inteligencia artificial."""
+
+    prompt: str
+    board_id: Optional[int] = None
+    item_id: Optional[int] = None
+    action_type: str = "generate_tasks"
+
+    @field_validator("prompt")
+    @classmethod
+    def check_prompt(cls, v: str) -> str:
+        cleaned = v.strip()
+        if len(cleaned) < 3:
+            raise ValueError("El prompt debe contener al menos 3 caracteres no vacíos.")
+        return cleaned
+
+    @field_validator("action_type")
+    @classmethod
+    def check_action_type(cls, v: str) -> str:
+        action = v.strip().lower()
+        if action not in VALID_AI_ACTIONS:
+            raise ValueError(
+                f"action_type '{action}' no es válido. Opciones permitidas: {sorted(VALID_AI_ACTIONS)}"
+            )
+        return action
+
+
+class AIGeneratedTask(BaseModel):
+    """Estructura de una tarea generada automáticamente por IA."""
+
+    title: str
+    group_name: str
+    status_key: str = "not_started"
+    priority: str = "medium"
+    estimated_hours: Optional[float] = None
+    budget: Optional[float] = None
+    notes: Optional[str] = None
+
+
+class AIPromptResponse(BaseModel):
+    """Respuesta estructurada emitida por el asistente de inteligencia artificial."""
+
+    action_type: str
+    message: str
+    created_tasks_count: int = 0
+    tasks: list[AIGeneratedTask] = []
+    checklist_items: list[str] = []
+    summary_text: Optional[str] = None
+
+
+class AICreditsResponse(BaseModel):
+    """Balance y disponibilidad de créditos de IA según el plan de suscripción."""
+
+    credits_total: Optional[int] = None
+    credits_used: int = 0
+    is_unlimited: bool = False
+    plan_tier: str
+
+
+
 
 

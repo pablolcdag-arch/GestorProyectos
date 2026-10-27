@@ -36,6 +36,7 @@ import {
 } from '../../types';
 import { AutomationsModal } from './AutomationsModal';
 import { BatchActionBar } from './BatchActionBar';
+import { AIAssistantBar } from '../ai/AIAssistantBar';
 import {
   BoardToolbar,
   type ColumnKey,
@@ -1551,6 +1552,9 @@ export const BoardView: React.FC = () => {
         board={activeBoard}
         onClearSelection={() => setSelectedItemIds(new Set())}
       />
+
+      {/* Píldora e Interfaz Sidekick de IA (1:1 Monday.com) */}
+      {selectedItemIds.size === 0 && <AIAssistantBar />}
     </main>
   );
 };

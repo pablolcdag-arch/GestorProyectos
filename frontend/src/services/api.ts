@@ -1,4 +1,7 @@
 import type {
+  AICreditsResponse,
+  AIPromptRequest,
+  AIPromptResponse,
   BoardAnalyticsRead,
   BoardAutomationCreate,
   BoardAutomationRead,
@@ -494,5 +497,17 @@ export const api = {
         billing_cycle: billingCycle,
       }),
     });
+  },
+
+  // Asistente IA Sidekick
+  askAI(payload: AIPromptRequest): Promise<AIPromptResponse> {
+    return request<AIPromptResponse>('/api/ai/ask', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getAICredits(): Promise<AICreditsResponse> {
+    return request<AICreditsResponse>('/api/ai/credits');
   },
 };

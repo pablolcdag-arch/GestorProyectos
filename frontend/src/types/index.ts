@@ -498,3 +498,31 @@ export interface CheckoutSessionResponse {
   subscription: SubscriptionRead;
   message?: string;
 }
+
+// Asistente de IA Sidekick
+export type AIActionType =
+  | 'generate_tasks'
+  | 'generate_board'
+  | 'breakdown_checklist'
+  | 'summarize_board';
+
+export interface AIPromptRequest {
+  prompt: string;
+  board_id?: number;
+  item_id?: number;
+  action_type: AIActionType;
+}
+
+export interface AIPromptResponse {
+  action_type: string;
+  message: string;
+  created_tasks_count: number;
+  summary_text?: string;
+  checklist_items?: string[];
+}
+
+export interface AICreditsResponse {
+  credits_total: number;
+  credits_used: number;
+  is_unlimited: boolean;
+}

@@ -10,15 +10,18 @@ import {
   Link as LinkIcon,
   List,
   ListOrdered,
+  Loader2,
   MessageSquare,
   Paperclip,
   Plus,
   Smile,
+  Sparkles,
   Trash2,
   Underline,
   User as UserIcon,
   X,
 } from 'lucide-react';
+import { api } from '../../services/api';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { PRIORITY_MAP } from '../../types';
 
@@ -134,6 +137,7 @@ export const ItemDetailDrawer: React.FC = () => {
   // Checklist state
   const [checklistTitle, setChecklistTitle] = useState('');
   const [isSubmittingChecklist, setIsSubmittingChecklist] = useState(false);
+  const [isBreakingDownAI, setIsBreakingDownAI] = useState(false);
 
   useEffect(() => {
     if (activeItemDetail) {
@@ -211,6 +215,30 @@ export const ItemDetailDrawer: React.FC = () => {
       // Error manejado en store
     } finally {
       setIsSubmittingChecklist(false);
+    }
+  };
+
+  const handleAIBreakdown = async () => {
+    if (!activeItemDetail || isBreakingDownAI) return;
+    setIsBreakingDownAI(true);
+    try {
+      const res = await api.askAI({
+        prompt: `Desglosar la tarea: ${activeItemDetail.title}`,
+        board_id: activeItemDetail.board_id,
+        item_id: activeItemDetail.id,
+        action_type: 'breakdown_checklist',
+      });
+      if (res.checklist_items && Array.isArray(res.checklist_items)) {
+        for (const itemTitle of res.checklist_items) {
+          if (itemTitle && itemTitle.trim()) {
+            await addChecklistItem(activeItemDetail.id, itemTitle.trim());
+          }
+        }
+      }
+    } catch {
+      // Error manejado silenciosamente
+    } finally {
+      setIsBreakingDownAI(false);
     }
   };
 
@@ -779,12 +807,34 @@ export const ItemDetailDrawer: React.FC = () => {
                         Checklist Interno
                       </h3>
                     </div>
-                    <span
-                      data-testid="drawer-checklist-progress"
-                      className="text-xs font-bold text-[#0073ea]"
-                    >
-                      {completedChecklist}/{totalChecklist} ({checklistPct}%)
-                    </span>
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => void handleAIBreakdown()}
+                        disabled={isBreakingDownAI}
+                        data-testid="btn-ai-breakdown-checklist"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-[#0073ea] bg-[#f0f7ff] hover:bg-[#e1f0ff] rounded-lg border border-[#0073ea]/30 transition-all cursor-pointer disabled:opacity-50"
+                        title="Desglosar subtareas con IA"
+                      >
+                        {isBreakingDownAI ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Desglosando...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3 h-3 text-[#0073ea]" />
+                            <span>✨ Desglosar con IA</span>
+                          </>
+                        )}
+                      </button>
+                      <span
+                        data-testid="drawer-checklist-progress"
+                        className="text-xs font-bold text-[#0073ea]"
+                      >
+                        {completedChecklist}/{totalChecklist} ({checklistPct}%)
+                      </span>
+                    </div>
                   </div>
 
                   {/* Barra de progreso visual */}
