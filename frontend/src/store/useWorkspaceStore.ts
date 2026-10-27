@@ -91,6 +91,7 @@ interface WorkspaceState {
   isLoadingMyWork: boolean;
   boardAutomations: BoardAutomationRead[];
   isLoadingAutomations: boolean;
+  hasLoadedInitialWorkspaces: boolean;
   isLoadingWorkspaces: boolean;
   isLoadingBoard: boolean;
   isLoadingItemDetail: boolean;
@@ -190,6 +191,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   isLoadingMyWork: false,
   boardAutomations: [],
   isLoadingAutomations: false,
+  hasLoadedInitialWorkspaces: false,
   isLoadingWorkspaces: false,
   isLoadingBoard: false,
   isLoadingItemDetail: false,
@@ -212,26 +214,37 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           activeBoard: null,
           activeItemDetail: null,
           boardAnalytics: null,
+          hasLoadedInitialWorkspaces: true,
           isLoadingWorkspaces: false,
+          isLoadingBoard: false,
         });
         return;
       }
 
-      const firstBoardId = targetWs.boards[0]?.id ?? null;
+      const currentBoardId = get().activeBoardId;
+      const targetBoardExists = targetWs.boards.some((b) => b.id === currentBoardId);
+      const targetBoardId = (currentBoardId && targetBoardExists)
+        ? currentBoardId
+        : (targetWs.boards[0]?.id ?? null);
+
       set({
         workspaces,
         activeWorkspaceId: targetWs.id,
-        activeBoardId: firstBoardId,
+        activeBoardId: targetBoardId,
+        currentViewMode: 'board',
+        hasLoadedInitialWorkspaces: true,
         isLoadingWorkspaces: false,
+        isLoadingBoard: targetBoardId !== null,
       });
 
-      if (firstBoardId !== null) {
-        await get().selectBoard(firstBoardId);
+      if (targetBoardId !== null) {
+        await get().selectBoard(targetBoardId);
       } else {
         set({
           activeBoard: null,
           activeItemDetail: null,
           boardAnalytics: null,
+          isLoadingBoard: false,
         });
       }
     } catch (err) {
@@ -239,7 +252,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         err instanceof Error
           ? err.message
           : 'Error al cargar los espacios de trabajo.';
-      set({ isLoadingWorkspaces: false, error: message });
+      set({
+        hasLoadedInitialWorkspaces: true,
+        isLoadingWorkspaces: false,
+        isLoadingBoard: false,
+        error: message,
+      });
     }
   },
 
@@ -247,20 +265,26 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const ws = get().workspaces.find((w) => w.id === workspaceId);
     if (!ws) return;
 
-    const firstBoardId = ws.boards[0]?.id ?? null;
+    const currentBoardId = get().activeBoardId;
+    const targetBoardExists = ws.boards.some((b) => b.id === currentBoardId);
+    const targetBoardId = (currentBoardId && targetBoardExists)
+      ? currentBoardId
+      : (ws.boards[0]?.id ?? null);
+
     set({
       activeWorkspaceId: workspaceId,
-      activeBoardId: firstBoardId,
+      activeBoardId: targetBoardId,
       activeItemDetail: null,
       boardAnalytics: null,
       currentViewMode: 'board',
+      isLoadingBoard: targetBoardId !== null,
       error: null,
     });
 
-    if (firstBoardId !== null) {
-      await get().selectBoard(firstBoardId);
+    if (targetBoardId !== null) {
+      await get().selectBoard(targetBoardId);
     } else {
-      set({ activeBoard: null });
+      set({ activeBoard: null, isLoadingBoard: false });
     }
   },
 
@@ -1335,6 +1359,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       isLoadingMyWork: false,
       boardAutomations: [],
       isLoadingAutomations: false,
+      hasLoadedInitialWorkspaces: false,
       isLoadingWorkspaces: false,
       isLoadingBoard: false,
       isLoadingItemDetail: false,

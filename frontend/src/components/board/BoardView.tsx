@@ -71,6 +71,8 @@ export const BoardView: React.FC = () => {
   const {
     activeBoard,
     isLoadingBoard,
+    isLoadingWorkspaces,
+    hasLoadedInitialWorkspaces,
     error,
     clearError,
     toggleGroupCollapse,
@@ -212,7 +214,10 @@ export const BoardView: React.FC = () => {
     setSortDirection(dir);
   };
 
-  if (isLoadingBoard && !activeBoard) {
+  if (
+    (isLoadingBoard || isLoadingWorkspaces || !hasLoadedInitialWorkspaces) &&
+    !activeBoard
+  ) {
     return (
       <div className="flex-1 flex items-center justify-center p-12 text-sm text-[#676879]">
         Cargando tablero...

@@ -266,12 +266,14 @@
        - 3 reglas reactivas de automatización por defecto.
   2. **Garantía de Onboarding en `GET /api/workspaces`:**
      - En `backend/app/routers/workspaces_router.py`, se ejecuta defensivamente `ensure_user_default_workspace(db, current_user)` en `list_workspaces`, asegurando que incluso usuarios preexistentes con 0 tableros reciban de inmediato el tablero de bienvenida.
-  3. **Auto-selección Reactiva en el Frontend:**
-     - El store `useWorkspaceStore.ts` selecciona automáticamente el primer tablero del espacio al cargar (`loadWorkspaces`), eliminando cualquier estado vacío o pantalla de "0 tableros".
+  3. **Auto-selección Reactiva y Blindaje Anti-Parpadeo en Frontend:**
+     - En `useWorkspaceStore.ts`, se activa de forma síncrona `isLoadingBoard: true` y se ancla la bandera `hasLoadedInitialWorkspaces` al obtener espacios, auto-seleccionando `targetWs.boards[0]` y su detalle reactivo.
+     - En `BoardView.tsx`, se introducen guardas defensivas para evitar cualquier parpadeo de "No hay ningún tablero seleccionado" mientras los datos iniciales viajan por la red.
+     - En `OnboardingAutoSelect.test.tsx`, se verifica que el tablero "Primer proyecto" se auto-selecciona inmediatamente, renderizando las 3 tareas y la sumatoria acumulada de $1,600.0.
   4. **Despliegue a Producción Vercel:**
-     - Se actualiza y despliega la SPA en Vercel (`gestor-proyectos-sandy.vercel.app`) reflejando la totalidad de los 8 Sprints de paridad visual de Monday.com.
-- **Razón:** Garantizar que cualquier usuario nuevo o potencial cliente que ingrese con Google OAuth experimente de inmediato la interfaz completa de Monday.com precargada sin fricción ni estados vacíos.
-- **Impacto:** Auditoría técnica independiente del Verificador Backend con veredicto **APROBADO ✅**, 78 pruebas automatizadas pasando al 100% (**31 en Pytest + 47 en Vitest**) y compilación de producción limpia.
+     - Se actualiza y despliega la SPA en Vercel (`gestor-proyectos-sandy.vercel.app`) reflejando la totalidad de los 8 Sprints de paridad visual de Monday.com y el flujo de auto-selección de onboarding.
+- **Razón:** Garantizar que cualquier usuario nuevo o potencial cliente que ingrese con Google OAuth experimente de inmediato la interfaz completa de Monday.com precargada sin fricción, sin parpadeos ni estados vacíos.
+- **Impacto:** Auditoría técnica independiente de los Verificadores Backend y Frontend con veredicto **APROBADO ✅** en ambos roles, **81 pruebas automatizadas pasando al 100%** (**31 en Pytest + 50 en Vitest**) y compilación de producción limpia.
 
 
 
