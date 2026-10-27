@@ -13,11 +13,13 @@ from app.config import settings
 from app.database import Base, ensure_schema_migrations
 from app.routers import (
     ai_router,
+    attachments_notifications_router,
     auth_router,
     automations_router,
     billing_router,
     boards_router,
     groups_items_router,
+    integrations_router,
     item_collaboration_router,
     my_work_router,
     workspaces_router,
@@ -71,6 +73,8 @@ app.include_router(automations_router.router)
 app.include_router(my_work_router.router)
 app.include_router(billing_router.router)
 app.include_router(ai_router.router)
+app.include_router(integrations_router.router)
+app.include_router(attachments_notifications_router.router)
 
 
 @app.get("/api/health", tags=["Health"])

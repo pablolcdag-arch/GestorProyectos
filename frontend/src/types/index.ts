@@ -526,3 +526,24 @@ export interface AICreditsResponse {
   credits_used: number;
   is_unlimited: boolean;
 }
+
+// Integraciones: Archivos Adjuntos
+export interface TaskAttachment {
+  id: number;
+  item_id: number;
+  filename: string;
+  file_size: number;
+  content_type: string;
+  file_url: string;
+  created_at: string;
+}
+
+// Integraciones: Notificaciones
+export interface NotificationItem {
+  id: number;
+  title: string;
+  message: string;
+  link_url?: string;
+  is_read: boolean;
+  created_at: string;
+}

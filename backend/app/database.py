@@ -128,11 +128,66 @@ def ensure_billing_schema(target_engine: Engine) -> None:
             )
 
 
+def ensure_integrations_schema(target_engine: Engine) -> None:
+    """Garantiza la creación de las tablas task_attachments y notifications en bases preexistentes."""
+    inspector = inspect(target_engine)
+    existing_tables = set(inspector.get_table_names())
+    is_sqlite = target_engine.dialect.name == "sqlite"
+    pk_type = "INTEGER PRIMARY KEY AUTOINCREMENT" if is_sqlite else "SERIAL PRIMARY KEY"
+
+    with target_engine.begin() as conn:
+        if "task_attachments" not in existing_tables:
+            conn.execute(
+                text(
+                    f"""
+                    CREATE TABLE IF NOT EXISTS task_attachments (
+                        id {pk_type},
+                        item_id INTEGER NOT NULL REFERENCES task_items(id) ON DELETE CASCADE,
+                        filename VARCHAR(255) NOT NULL,
+                        file_size INTEGER NOT NULL DEFAULT 0,
+                        content_type VARCHAR(100) NOT NULL DEFAULT 'application/octet-stream',
+                        file_url VARCHAR(500) NOT NULL,
+                        uploaded_by_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
+            )
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_task_attachments_item_id ON task_attachments(item_id)"
+                )
+            )
+
+        if "notifications" not in existing_tables:
+            conn.execute(
+                text(
+                    f"""
+                    CREATE TABLE IF NOT EXISTS notifications (
+                        id {pk_type},
+                        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        title VARCHAR(255) NOT NULL,
+                        message TEXT NOT NULL,
+                        link_url VARCHAR(500),
+                        is_read BOOLEAN NOT NULL DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
+            )
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_notifications_user_id ON notifications(user_id)"
+                )
+            )
+
+
 def ensure_schema_migrations(target_engine: Engine) -> None:
     """Aplica todas las migraciones defensivas para bases de datos preexistentes."""
     ensure_phase2_schema(target_engine)
     ensure_phase3_schema(target_engine)
     ensure_billing_schema(target_engine)
+    ensure_integrations_schema(target_engine)
 
 
 def get_db() -> Generator[Session, None, None]:

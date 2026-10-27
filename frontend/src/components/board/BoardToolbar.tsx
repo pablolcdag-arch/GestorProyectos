@@ -7,13 +7,17 @@ import {
   CheckSquare,
   ChevronDown,
   Clock,
+  Copy,
   DollarSign,
+  ExternalLink,
   EyeOff,
   Filter,
   FilterX,
   Search,
   User as UserIcon,
+  X,
 } from 'lucide-react';
+import { api } from '../../services/api';
 import { PRIORITY_MAP, type BoardDetailRead, type UserRead } from '../../types';
 
 export type ColumnKey =
@@ -97,7 +101,26 @@ export const BoardToolbar: React.FC<BoardToolbarProps> = ({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isHideColumnsOpen, setIsHideColumnsOpen] = useState(false);
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [copiedCalendar, setCopiedCalendar] = useState(false);
   const [colSearchQuery, setColSearchQuery] = useState('');
+
+  const calendarFeedUrl = api.getCalendarFeedUrl(board.id);
+  const googleCalendarWebUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(
+    calendarFeedUrl.replace(/^https?:\/\//i, 'webcal://'),
+  )}`;
+
+  const handleCopyFeedUrl = async () => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(calendarFeedUrl);
+      }
+    } catch {
+      // Silencioso
+    }
+    setCopiedCalendar(true);
+    setTimeout(() => setCopiedCalendar(false), 2000);
+  };
 
   const filterRef = useRef<HTMLDivElement>(null);
   const sortRef = useRef<HTMLDivElement>(null);
@@ -645,6 +668,18 @@ export const BoardToolbar: React.FC<BoardToolbarProps> = ({
             <span>Limpiar filtros</span>
           </button>
         )}
+
+        {/* 5. Botón Sincronizar Google Calendar 1:1 Monday.com */}
+        <button
+          type="button"
+          data-testid="btn-sync-calendar"
+          onClick={() => setIsCalendarModalOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 bg-white text-[#323338] hover:bg-[#f6f7fb] transition-colors cursor-pointer"
+          title="Sincronizar con Google Calendar"
+        >
+          <Calendar className="w-3.5 h-3.5 text-[#0073ea]" />
+          <span>Sincronizar Calendario</span>
+        </button>
       </div>
 
       {/* Selects accesibles sincronizados para retrocompatibilidad total con suites existentes */}
@@ -694,6 +729,98 @@ export const BoardToolbar: React.FC<BoardToolbarProps> = ({
           <option value="low">Prioridad: Baja</option>
         </select>
       </div>
+
+      {/* Modal Sincronización Google Calendar 1:1 Monday.com */}
+      {isCalendarModalOpen && (
+        <div
+          data-testid="modal-sync-calendar"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Sincronizar con Google Calendar"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsCalendarModalOpen(false);
+          }}
+        >
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 space-y-4">
+            <button
+              type="button"
+              onClick={() => setIsCalendarModalOpen(false)}
+              data-testid="btn-close-sync-modal"
+              aria-label="Cerrar modal"
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-[#676879] hover:text-[#323338] hover:bg-gray-100 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#0073ea]">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-[#323338]">
+                  Sincronizar con Google Calendar
+                </h3>
+                <p className="text-xs text-[#676879]">
+                  Tablero: {board.name}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#676879] leading-relaxed">
+              Mantené sincronizadas las fechas límite y entregas de tu equipo.
+              Podés suscribirte en Google Calendar o copiar el enlace iCal (.ics)
+              para Outlook y Apple Calendar.
+            </p>
+
+            <div className="p-3 bg-[#f7f8fa] rounded-xl border border-gray-200 space-y-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#676879] block">
+                URL de suscripción iCal (.ics)
+              </span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={calendarFeedUrl}
+                  data-testid="input-ical-url"
+                  className="flex-1 px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 bg-white text-[#323338] select-all focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleCopyFeedUrl()}
+                  data-testid="btn-copy-ical-url"
+                  className="px-3 py-1.5 rounded-lg bg-[#0073ea] text-white hover:bg-[#0060b9] text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  {copiedCalendar ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>¡Copiado!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copiar</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between gap-3">
+              <a
+                href={googleCalendarWebUrl}
+                target="_blank"
+                rel="noreferrer"
+                data-testid="btn-open-google-calendar"
+                className="w-full py-2 px-3 rounded-xl bg-[#0073ea] hover:bg-[#0060b9] text-white text-xs font-bold text-center flex items-center justify-center gap-2 shadow-xs transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Abrir en Google Calendar</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

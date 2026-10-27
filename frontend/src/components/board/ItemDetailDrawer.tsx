@@ -6,6 +6,11 @@ import {
   Calendar,
   CheckSquare,
   Clock,
+  Download,
+  File,
+  FileSpreadsheet,
+  FileText,
+  Image as ImageIcon,
   Italic,
   Link as LinkIcon,
   List,
@@ -18,12 +23,13 @@ import {
   Sparkles,
   Trash2,
   Underline,
+  UploadCloud,
   User as UserIcon,
   X,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
-import { PRIORITY_MAP } from '../../types';
+import { PRIORITY_MAP, type TaskAttachment } from '../../types';
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -108,7 +114,7 @@ function renderFormattedContent(text: string): React.ReactNode {
   );
 }
 
-type DrawerTab = 'updates' | 'activity' | 'checklist';
+type DrawerTab = 'updates' | 'activity' | 'checklist' | 'files';
 
 export const ItemDetailDrawer: React.FC = () => {
   const {
@@ -138,6 +144,98 @@ export const ItemDetailDrawer: React.FC = () => {
   const [checklistTitle, setChecklistTitle] = useState('');
   const [isSubmittingChecklist, setIsSubmittingChecklist] = useState(false);
   const [isBreakingDownAI, setIsBreakingDownAI] = useState(false);
+
+  // Attachments / Archivos state
+  const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
+  const [isLoadingAttachments, setIsLoadingAttachments] = useState(false);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const loadAttachments = async (itemId: number) => {
+    setIsLoadingAttachments(true);
+    try {
+      const res = await api.getItemAttachments(itemId);
+      setAttachments(Array.isArray(res) ? res : []);
+    } catch {
+      setAttachments([]);
+    } finally {
+      setIsLoadingAttachments(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeItemDetail?.id) {
+      void loadAttachments(activeItemDetail.id);
+    } else {
+      setAttachments([]);
+    }
+  }, [activeItemDetail?.id]);
+
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !activeItemDetail) return;
+    setIsUploadingAttachment(true);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const objectUrl =
+          typeof URL !== 'undefined' && URL.createObjectURL
+            ? URL.createObjectURL(file)
+            : `/mock-files/${file.name}`;
+        const created = await api.addAttachment(activeItemDetail.id, {
+          filename: file.name,
+          file_size: file.size,
+          content_type: file.type || 'application/octet-stream',
+          file_url: objectUrl,
+        });
+        setAttachments((prev) => {
+          if (prev.some((a) => a.id === created.id)) return prev;
+          return [...prev, created];
+        });
+      }
+    } catch {
+      // Silencioso
+    } finally {
+      setIsUploadingAttachment(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: number) => {
+    try {
+      await api.deleteAttachment(attachmentId);
+      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+    } catch {
+      // Silencioso
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileIcon = (contentType: string, filename: string) => {
+    const lower = filename.toLowerCase();
+    if (contentType?.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/i.test(lower)) {
+      return <ImageIcon className="w-5 h-5 text-purple-500 shrink-0" />;
+    }
+    if (contentType === 'application/pdf' || lower.endsWith('.pdf')) {
+      return <FileText className="w-5 h-5 text-red-500 shrink-0" />;
+    }
+    if (
+      contentType?.includes('spreadsheet') ||
+      contentType?.includes('excel') ||
+      contentType === 'text/csv' ||
+      /\.(csv|xlsx?)$/i.test(lower)
+    ) {
+      return <FileSpreadsheet className="w-5 h-5 text-emerald-600 shrink-0" />;
+    }
+    return <File className="w-5 h-5 text-[#0073ea] shrink-0" />;
+  };
 
   useEffect(() => {
     if (activeItemDetail) {
@@ -446,6 +544,32 @@ export const ItemDetailDrawer: React.FC = () => {
               </span>
             )}
           </button>
+
+          <button
+            type="button"
+            data-testid="drawer-tab-files"
+            onClick={() => setActiveTab('files')}
+            className={`py-3 text-sm flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+              activeTab === 'files'
+                ? 'border-[#0073ea] text-[#0073ea] font-bold'
+                : 'border-transparent text-[#676879] hover:text-[#323338] hover:border-gray-300 font-medium'
+            }`}
+          >
+            <Paperclip className="w-4 h-4" />
+            <span>Archivos</span>
+            {attachments.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-gray-100 text-[#323338] font-bold">
+                {attachments.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            data-testid="tab-files"
+            className="hidden"
+            onClick={() => setActiveTab('files')}
+            aria-hidden="true"
+          />
 
           {/* Aliases para suites de pruebas anteriores */}
           <button
@@ -936,6 +1060,124 @@ export const ItemDetailDrawer: React.FC = () => {
                       aria-hidden="true"
                     />
                   </form>
+                </div>
+              </section>
+
+              {/* SECCIÓN 4: ARCHIVOS ADJUNTOS */}
+              <section
+                data-testid="drawer-files-section"
+                className={activeTab === 'files' ? 'space-y-4' : 'hidden'}
+              >
+                {/* Zona de subida Drag & Drop */}
+                <div
+                  data-testid="dropzone-attachments"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDraggingOver(true);
+                  }}
+                  onDragLeave={() => setIsDraggingOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDraggingOver(false);
+                    void handleFileUpload(e.dataTransfer.files);
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                    isDraggingOver
+                      ? 'border-[#0073ea] bg-[#f0f7ff]'
+                      : 'border-gray-300 bg-[#f7f8fa] hover:border-[#0073ea]/60 hover:bg-[#f0f7ff]/50'
+                  }`}
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    multiple
+                    data-testid="file-input-attachments"
+                    onChange={(e) => void handleFileUpload(e.target.files)}
+                    className="hidden"
+                  />
+                  <UploadCloud className="w-8 h-8 text-[#0073ea] mx-auto mb-2" />
+                  <p className="text-xs font-bold text-[#323338]">
+                    Arrastrá archivos acá o hacé clic para adjuntar
+                  </p>
+                  <p className="text-[11px] text-[#676879] mt-1">
+                    Soporta imágenes, PDFs, hojas de cálculo y documentos
+                  </p>
+                  {isUploadingAttachment && (
+                    <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-[#0073ea] font-semibold">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Subiendo archivo...</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Lista de Archivos Adjuntos */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#323338]">
+                      Archivos Adjuntos ({attachments.length})
+                    </h3>
+                  </div>
+
+                  {isLoadingAttachments ? (
+                    <p className="text-xs text-[#676879] py-4 text-center">
+                      Cargando archivos...
+                    </p>
+                  ) : attachments.length === 0 ? (
+                    <div className="text-center py-6 border border-gray-100 rounded-xl bg-white text-xs text-[#676879]">
+                      <Paperclip className="w-5 h-5 text-gray-300 mx-auto mb-1.5" />
+                      <p>No hay archivos adjuntos en esta tarea todavía.</p>
+                    </div>
+                  ) : (
+                    <div data-testid="attachments-list" className="space-y-2">
+                      {attachments.map((att) => (
+                        <div
+                          key={att.id}
+                          data-testid={`attachment-item-${att.id}`}
+                          className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white border border-gray-200 hover:border-gray-300 hover:shadow-xs transition-all"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            {getFileIcon(att.content_type, att.filename)}
+                            <div className="min-w-0 flex-1">
+                              <p
+                                data-testid={`attachment-name-${att.id}`}
+                                className="text-xs font-semibold text-[#323338] truncate"
+                              >
+                                {att.filename}
+                              </p>
+                              <p className="text-[10px] text-[#676879] mt-0.5">
+                                {formatFileSize(att.file_size)} •{' '}
+                                {new Date(att.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <a
+                              href={att.file_url}
+                              download={att.filename}
+                              target="_blank"
+                              rel="noreferrer"
+                              data-testid={`btn-download-attachment-${att.id}`}
+                              className="p-1.5 rounded-lg text-[#676879] hover:text-[#0073ea] hover:bg-blue-50 transition-colors"
+                              title="Descargar archivo"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => void handleDeleteAttachment(att.id)}
+                              data-testid={`btn-delete-attachment-${att.id}`}
+                              className="p-1.5 rounded-lg text-[#676879] hover:text-[#e2445c] hover:bg-red-50 transition-colors cursor-pointer"
+                              title="Eliminar adjunto"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </section>
             </>

@@ -15,11 +15,13 @@ import type {
   CheckoutSessionResponse,
   DeleteBoardStatusResponse,
   MyWorkResponse,
+  NotificationItem,
   OAuthAuthorizeResponse,
   OAuthCallbackRequest,
   OAuthProviderConfig,
   PricingPlanRead,
   SubscriptionRead,
+  TaskAttachment,
   TaskChecklistCreate,
   TaskChecklistItemRead,
   TaskChecklistUpdate,
@@ -509,5 +511,57 @@ export const api = {
 
   getAICredits(): Promise<AICreditsResponse> {
     return request<AICreditsResponse>('/api/ai/credits');
+  },
+
+  // Integraciones: Archivos Adjuntos
+  getItemAttachments(itemId: number): Promise<TaskAttachment[]> {
+    return request<TaskAttachment[]>(`/api/items/${itemId}/attachments`);
+  },
+
+  addAttachment(
+    itemId: number,
+    file: {
+      filename: string;
+      file_size: number;
+      content_type: string;
+      file_url: string;
+    },
+  ): Promise<TaskAttachment> {
+    return request<TaskAttachment>(`/api/items/${itemId}/attachments`, {
+      method: 'POST',
+      body: JSON.stringify(file),
+    });
+  },
+
+  deleteAttachment(attachmentId: number): Promise<void> {
+    return request<void>(`/api/attachments/${attachmentId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Integraciones: Google Calendar Feed
+  getCalendarFeedUrl(boardId: number): string {
+    const origin =
+      typeof window !== 'undefined' && window.location.origin
+        ? window.location.origin
+        : 'http://localhost:5173';
+    return `${origin}/api/boards/${boardId}/calendar.ics`;
+  },
+
+  // Integraciones: Campana de Notificaciones
+  getNotifications(): Promise<NotificationItem[]> {
+    return request<NotificationItem[]>('/api/notifications');
+  },
+
+  markNotificationRead(id: number): Promise<void> {
+    return request<void>(`/api/notifications/${id}/read`, {
+      method: 'PATCH',
+    });
+  },
+
+  markAllNotificationsRead(): Promise<void> {
+    return request<void>('/api/notifications/read-all', {
+      method: 'POST',
+    });
   },
 };

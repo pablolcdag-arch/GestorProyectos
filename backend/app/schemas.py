@@ -947,6 +947,67 @@ class AICreditsResponse(BaseModel):
     plan_tier: str
 
 
+# ============================================================================
+# Esquemas para Archivos Adjuntos, Notificaciones y Calendario (Paso 3)
+# ============================================================================
+
+class TaskAttachmentCreate(BaseModel):
+    """Payload para registrar un archivo adjunto en una tarea."""
+
+    filename: str
+    file_size: int
+    content_type: str = "application/octet-stream"
+    file_url: Optional[str] = None
+
+    @field_validator("filename")
+    @classmethod
+    def check_filename(cls, v: str) -> str:
+        return validate_non_empty_text(v, "filename")
+
+
+class TaskAttachmentRead(BaseModel):
+    """Representación de un archivo adjunto."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    item_id: int
+    filename: str
+    file_size: int
+    content_type: str
+    file_url: str
+    uploaded_by_id: Optional[int] = None
+    created_at: datetime
+
+
+class NotificationRead(BaseModel):
+    """Representación de una notificación de usuario."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    title: str
+    message: str
+    link_url: Optional[str] = None
+    is_read: bool
+    created_at: datetime
+
+
+class NotificationUpdate(BaseModel):
+    """Payload para actualizar el estado de lectura de una notificación."""
+
+    is_read: bool = True
+
+
+class CalendarUrlResponse(BaseModel):
+    """URLs formateadas para suscripción iCal y Google Calendar."""
+
+    feed_url: str
+    google_calendar_url: str
+
+
+
 
 
 

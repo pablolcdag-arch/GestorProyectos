@@ -314,6 +314,23 @@
 - **Razón:** Ofrecer inteligencia artificial integrada y nativa como valor diferencial clave frente a las costosas tarifas de IA de Monday.com.
 - **Impacto:** Auditoría técnica independiente de los Verificadores Backend y Frontend con veredicto **APROBADO ✅** en ambos roles, **100 pruebas automatizadas pasando al 100%** (**42 en Pytest + 58 en Vitest**) y compilación de producción de Vite limpia en 1.06s.
 
+---
+
+## [27/10/2026] — Sprint Paso 3: Integraciones (Google Calendar iCal, Archivos Adjuntos y Notificaciones) 1:1 Monday.com
+- **Decisión:**
+  1. **Sincronización Universal de Calendario (Google Calendar / Outlook / iCal):**
+     - En `integrations_router.py`, se crea el endpoint `GET /api/integrations/calendar/feed/{board_id}.ics` emitiendo feeds iCalendar estándar RFC 5545 (`text/calendar; charset=utf-8`) con fechas de vencimiento de tareas, resumen y estado, junto a `GET /api/integrations/calendar/google-url/{board_id}` para suscripción con 1 clic en Google Calendar.
+  2. **Gestión de Archivos Adjuntos en Tareas:**
+     - En `models.py` y `attachments_notifications_router.py`, se implementa `TaskAttachment` (relación en cascada con `TaskItem`), endpoints CRUD de adjuntos y migración idempotente de base de datos.
+     - En `ItemDetailDrawer.tsx`, se incorpora la 4ta pestaña **"Archivos"** con contador, zona de subida drag & drop, tarjetas con íconos temáticos (PDF, imagen, cálculo, genérico), tamaño formateado y acción de eliminación.
+  3. **Centro de Notificaciones en Cabecera:**
+     - En `models.py`, se crea `Notification` y endpoints para consulta y marcado de lectura individual y masivo.
+     - En `TopHeader.tsx`, se integra la campana oficial de notificaciones con badge reactivo de no leídas (`#e2445c`) y popover flotante con scroll y marcas temporales relativas.
+  4. **Acción de Sincronización en Barra de Herramientas:**
+     - En `BoardToolbar.tsx`, se incorpora el modal de sincronización con enlace directo a Google Calendar y botón de copiado de URL del feed `.ics`.
+- **Razón:** Completar el ecosistema de productividad Work OS conectando el gestor con las herramientas cotidianas de los usuarios (calendarios, archivos y alertas de equipo).
+- **Impacto:** Auditoría técnica independiente de los Verificadores Backend y Frontend con veredicto **APROBADO ✅** en ambos roles, **107 pruebas automatizadas pasando al 100%** (**46 en Pytest + 61 en Vitest**) y compilación de producción de Vite limpia en 1.07s.
+
 
 
 

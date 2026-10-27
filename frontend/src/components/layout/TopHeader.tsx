@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Bell,
+  CheckCheck,
   ChevronDown,
   LayoutGrid,
   LogOut,
@@ -8,11 +10,12 @@ import {
   RefreshCw,
   Sparkles,
 } from 'lucide-react';
+import { api } from '../../services/api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useBillingStore } from '../../store/useBillingStore';
 import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { GoogleLogoSvg, MicrosoftLogoSvg } from '../auth/LoginScreen';
-import type { DevAccountInfo } from '../../types';
+import type { DevAccountInfo, NotificationItem } from '../../types';
 
 interface TopHeaderProps {
   sidebarCollapsed: boolean;
@@ -72,12 +75,74 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     useBillingStore();
 
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+
+  const loadNotifications = async () => {
+    try {
+      const list = await api.getNotifications();
+      setNotifications(Array.isArray(list) ? list : []);
+    } catch {
+      // Ignorar errores en entornos sin mock
+    }
+  };
 
   useEffect(() => {
     if (user) {
       void loadBillingInfo();
+      void loadNotifications();
     }
   }, [user, loadBillingInfo]);
+
+  useEffect(() => {
+    if (!notificationsOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(e.target as Node)
+      ) {
+        setNotificationsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [notificationsOpen]);
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const handleMarkAllNotificationsRead = async () => {
+    try {
+      await api.markAllNotificationsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    } catch {
+      // Silencioso
+    }
+  };
+
+  const handleMarkNotificationRead = async (id: number) => {
+    try {
+      await api.markNotificationRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
+      );
+    } catch {
+      // Silencioso
+    }
+  };
 
   const activeWorkspace = workspaces.find((ws) => ws.id === activeWorkspaceId);
 
@@ -245,6 +310,107 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               )}
             </div>
           )}
+
+          {/* Campana de Notificaciones 1:1 Monday.com */}
+          <div ref={notificationsRef} className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setNotificationsOpen((prev) => !prev);
+                setSwitcherOpen(false);
+              }}
+              data-testid="btn-notifications-bell"
+              aria-label="Notificaciones"
+              className="relative p-2 rounded-lg text-[#676879] hover:bg-gray-100 hover:text-[#323338] transition-colors cursor-pointer"
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span
+                  data-testid="badge-notifications-count"
+                  className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#e2445c] text-white text-[10px] font-bold flex items-center justify-center leading-none shadow-xs"
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {notificationsOpen && (
+              <div
+                data-testid="notifications-popover"
+                className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 py-3 z-50 animate-in fade-in zoom-in-95 duration-100"
+              >
+                {/* Cabecera del Popover */}
+                <div className="flex items-center justify-between px-4 pb-2.5 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-sm text-[#323338]">
+                      Notificaciones
+                    </span>
+                    {unreadCount > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-red-50 text-[#e2445c] text-[10px] font-bold border border-red-100">
+                        {unreadCount} nuevas
+                      </span>
+                    )}
+                  </div>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => void handleMarkAllNotificationsRead()}
+                      data-testid="btn-mark-all-read"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0073ea] hover:underline cursor-pointer"
+                    >
+                      <CheckCheck className="w-3.5 h-3.5" />
+                      <span>Marcar todas como leídas</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Lista de Notificaciones */}
+                <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                  {notifications.length === 0 ? (
+                    <div className="p-6 text-center text-xs text-[#676879]">
+                      <Bell className="w-6 h-6 text-gray-300 mx-auto mb-2" />
+                      <p>No tenés notificaciones pendientes</p>
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <button
+                        key={n.id}
+                        type="button"
+                        onClick={() => void handleMarkNotificationRead(n.id)}
+                        data-testid={`notification-item-${n.id}`}
+                        className={`w-full p-3 text-left transition-colors cursor-pointer flex items-start gap-3 ${
+                          n.is_read
+                            ? 'bg-white hover:bg-gray-50 text-[#676879]'
+                            : 'bg-[#f0f7ff] hover:bg-[#e6f2ff] text-[#323338]'
+                        }`}
+                      >
+                        <span
+                          className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                            n.is_read ? 'bg-transparent' : 'bg-[#0073ea]'
+                          }`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-xs truncate ${
+                              n.is_read ? 'font-medium' : 'font-bold text-[#323338]'
+                            }`}
+                          >
+                            {n.title}
+                          </p>
+                          <p className="text-[11px] text-[#676879] line-clamp-2 mt-0.5">
+                            {n.message}
+                          </p>
+                          <span className="text-[10px] text-gray-400 mt-1 block">
+                            {new Date(n.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Perfil del usuario autenticado */}
           <div

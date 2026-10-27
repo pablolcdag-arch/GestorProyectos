@@ -289,6 +289,12 @@ class TaskItem(Base):
         cascade="all, delete-orphan",
         order_by="TaskActivityLog.id.desc()",
     )
+    attachments: Mapped[list["TaskAttachment"]] = relationship(
+        "TaskAttachment",
+        back_populates="item",
+        cascade="all, delete-orphan",
+        order_by="TaskAttachment.id.desc()",
+    )
 
     @property
     def comments_count(self) -> int:
@@ -375,4 +381,57 @@ class TaskActivityLog(Base):
 
     item: Mapped["TaskItem"] = relationship("TaskItem", back_populates="activities")
     user: Mapped[Optional["User"]] = relationship("User", foreign_keys=[user_id])
+
+
+class TaskAttachment(Base):
+    """Archivo adjunto asociado a una tarea."""
+
+    __tablename__ = "task_attachments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    item_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("task_items.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    content_type: Mapped[str] = mapped_column(
+        String(100), nullable=False, default="application/octet-stream"
+    )
+    file_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    uploaded_by_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+    item: Mapped["TaskItem"] = relationship("TaskItem", back_populates="attachments")
+    uploaded_by: Mapped[Optional["User"]] = relationship("User", foreign_keys=[uploaded_by_id])
+
+
+class Notification(Base):
+    """Notificación interna para un usuario del sistema."""
+
+    __tablename__ = "notifications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    link_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+    user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
+
 
