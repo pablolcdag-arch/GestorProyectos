@@ -36,6 +36,7 @@ import {
   type UserRead,
 } from '../../types';
 import { AutomationsModal } from './AutomationsModal';
+import { BatchActionBar } from './BatchActionBar';
 import { DashboardView } from './DashboardView';
 import { GroupFooterSummary } from './GroupFooterSummary';
 import { GroupHeader } from './GroupHeader';
@@ -108,6 +109,41 @@ export const BoardView: React.FC = () => {
   const [quickAddTitles, setQuickAddTitles] = useState<Record<number, string>>(
     {},
   );
+
+  // Estado reactivo de selección múltiple (Batch Actions)
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(
+    new Set(),
+  );
+
+  const handleToggleSelectItem = (itemId: number) => {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleSelectGroup = (itemIds: number[]) => {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      const allSelected =
+        itemIds.length > 0 && itemIds.every((id) => next.has(id));
+      if (allSelected) {
+        for (const id of itemIds) {
+          next.delete(id);
+        }
+      } else {
+        for (const id of itemIds) {
+          next.add(id);
+        }
+      }
+      return next;
+    });
+  };
 
   if (isLoadingBoard && !activeBoard) {
     return (
@@ -712,7 +748,19 @@ export const BoardView: React.FC = () => {
                               <div className="flex items-center justify-center h-full">
                                 <input
                                   type="checkbox"
-                                  aria-label="Seleccionar todas las tareas"
+                                  aria-label={`Seleccionar todas las tareas del grupo ${group.title}`}
+                                  data-testid={`select-all-group-${group.id}`}
+                                  checked={
+                                    visibleItems.length > 0 &&
+                                    visibleItems.every((i) =>
+                                      selectedItemIds.has(i.id),
+                                    )
+                                  }
+                                  onChange={() =>
+                                    handleToggleSelectGroup(
+                                      visibleItems.map((i) => i.id),
+                                    )
+                                  }
                                   className="w-3.5 h-3.5 rounded border-[#d0d4e4] text-[#0073ea] focus:ring-[#0073ea] cursor-pointer"
                                 />
                               </div>
@@ -771,6 +819,7 @@ export const BoardView: React.FC = () => {
                             };
 
                             const isEditingThisItem = editingItemId === item.id;
+                            const isSelected = selectedItemIds.has(item.id);
                             const isOverdue =
                               Boolean(item.due_date) &&
                               item.due_date! < todayIso &&
@@ -785,21 +834,41 @@ export const BoardView: React.FC = () => {
                               <tr
                                 key={item.id}
                                 data-testid={`task-row-${item.id}`}
-                                className="h-9 min-h-[36px] max-h-[36px] leading-[36px] border-b border-[#d0d4e4] hover:bg-[#f6f7fb] transition-colors group/row"
+                                className={`h-9 min-h-[36px] max-h-[36px] leading-[36px] border-b border-[#d0d4e4] transition-colors group/row ${
+                                  isSelected
+                                    ? 'bg-[#edf5ff]'
+                                    : 'hover:bg-[#f6f7fb]'
+                                }`}
                               >
                                 {/* Checkbox y menú lateral de fila */}
-                                <td className="w-10 min-w-[40px] max-w-[40px] h-9 min-h-[36px] max-h-[36px] border-r border-[#d0d4e4] p-0 text-center bg-white group-hover/row:bg-[#f6f7fb]">
+                                <td
+                                  className={`w-10 min-w-[40px] max-w-[40px] h-9 min-h-[36px] max-h-[36px] border-r border-[#d0d4e4] p-0 text-center ${
+                                    isSelected
+                                      ? 'bg-[#edf5ff]'
+                                      : 'bg-white group-hover/row:bg-[#f6f7fb]'
+                                  }`}
+                                >
                                   <div className="flex items-center justify-center h-full">
                                     <input
                                       type="checkbox"
                                       aria-label={`Seleccionar tarea ${item.title}`}
+                                      data-testid={`item-checkbox-${item.id}`}
+                                      checked={isSelected}
+                                      onChange={() =>
+                                        handleToggleSelectItem(item.id)
+                                      }
                                       className="w-3.5 h-3.5 rounded border-[#d0d4e4] text-[#0073ea] focus:ring-[#0073ea] cursor-pointer"
                                     />
                                   </div>
                                 </td>
 
                                 {/* Columna 1: Tarea (Sticky) */}
-                                <td className="w-[331px] min-w-[331px] h-9 min-h-[36px] max-h-[36px] px-3 border-r border-[#d0d4e4] sticky left-10 z-10 bg-white group-hover/row:bg-[#f6f7fb] focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
+                                <td
+                                  className={`w-[331px] min-w-[331px] h-9 min-h-[36px] max-h-[36px] px-3 border-r border-[#d0d4e4] sticky left-10 z-10 ${
+                                    isSelected
+                                      ? 'bg-[#edf5ff]'
+                                      : 'bg-white group-hover/row:bg-[#f6f7fb]'
+                                  } focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]`}>
                                   {isEditingThisItem ? (
                                     <div className="flex items-center gap-1.5 h-full">
                                       <input
@@ -1283,6 +1352,13 @@ export const BoardView: React.FC = () => {
 
       {/* Panel Lateral de Detalle y Colaboración por Tarea */}
       <ItemDetailDrawer />
+
+      {/* Barra Flotante de Acciones en Lote (Batch Action Bar 1:1 Monday.com) */}
+      <BatchActionBar
+        selectedItemIds={selectedItemIds}
+        board={activeBoard}
+        onClearSelection={() => setSelectedItemIds(new Set())}
+      />
     </main>
   );
 };

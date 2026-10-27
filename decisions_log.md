@@ -194,6 +194,20 @@
 - **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.15s, 34/34 tests en Vitest y 29/29 tests en Pytest pasando al 100% (63 tests en verde sin regresiones).
 - **Impacto:** Arquitectura de grupos robusta, altamente interactiva y visualmente fiel a Monday.com.
 
+---
+
+## [26/10/2026] — Sprint 5: Barra Flotante de Acciones en Lote (Floating Batch Action Bar) 1:1 Monday.com
+- **Decisión:**
+  1. **Selección Múltiple Reactiva y Resaltado Visual:**
+     - Se integran checkboxes interactivos por fila y en la cabecera de grupo con estado `selectedItemIds: Set<number>`.
+     - Las filas seleccionadas se tiñen reactivamente con fondo azul suave Monday `#edf5ff` (`bg-[#edf5ff]`).
+  2. **Componente Modular BatchActionBar:**
+     - Se crea `frontend/src/components/board/BatchActionBar.tsx`, renderizando una cápsula fija centrada en la parte inferior de la ventana cuando hay tareas seleccionadas.
+     - Incluye insignia azul `#0073ea` con contador de elementos (`X Elementos seleccionados`), botón de cierre `X` y operaciones en lote: duplicar, eliminar con confirmación defensiva, mover a otro grupo mediante selector rápido y exportar selección a CSV.
+- **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.14s, 38/38 tests en Vitest y 29/29 tests en Pytest pasando al 100% (67 tests en verde sin regresiones).
+- **Impacto:** Operaciones masivas fluidas e intuitivas con experiencia visual idéntica a Monday.com.
+
+
 
 
 
