@@ -21,6 +21,7 @@ from app.models import (
     BoardAutomation,
     BoardStatusConfig,
     TaskGroup,
+    TaskItem,
     User,
     Workspace,
 )
@@ -434,24 +435,26 @@ def upsert_oauth_user(db: Session, provider: str, profile: dict[str, Any]) -> Us
 
 
 def ensure_user_default_workspace(db: Session, user: User) -> None:
-    """Asegura que un nuevo usuario posea al menos un Espacio de Trabajo limpio y un Tablero principal."""
-    total_ws = db.query(Workspace).count()
-    if total_ws == 0:
-        ws = Workspace(
+    """Asegura que un nuevo usuario posea al menos un Espacio de Trabajo limpio y el Tablero oficial de bienvenida."""
+    user_ws = db.query(Workspace).filter(Workspace.owner_id == user.id).first()
+    if not user_ws:
+        user_ws = Workspace(
             name="Mi Espacio de Trabajo",
             description="Espacio principal de gestión",
             icon="Briefcase",
             color="#0073ea",
             owner_id=user.id,
         )
-        db.add(ws)
+        db.add(user_ws)
         db.commit()
-        db.refresh(ws)
+        db.refresh(user_ws)
 
+    board = db.query(Board).filter(Board.workspace_id == user_ws.id).first()
+    if not board:
         board = Board(
-            name="Tablero Principal",
-            description="Gestioná tus tareas y proyectos visualmente",
-            workspace_id=ws.id,
+            name="Primer proyecto",
+            description="Gestioná tus tareas y flujos de trabajo en un solo lugar",
+            workspace_id=user_ws.id,
         )
         db.add(board)
         db.commit()
@@ -468,9 +471,56 @@ def ensure_user_default_workspace(db: Session, user: User) -> None:
                 )
             )
 
-        grp1 = TaskGroup(board_id=board.id, title="Esta Semana", color="#579bfc", position=0)
-        grp2 = TaskGroup(board_id=board.id, title="Próximas Tareas", color="#a25ddc", position=1)
+        grp1 = TaskGroup(board_id=board.id, title="Pendientes", color="#579bfc", position=0)
+        grp2 = TaskGroup(board_id=board.id, title="Completado", color="#00c875", position=1)
         db.add_all([grp1, grp2])
+        db.flush()
+
+        today = datetime.now(timezone.utc).date()
+        due_yesterday = (today - timedelta(days=1)).isoformat()
+        due_today = today.isoformat()
+        due_tomorrow = (today + timedelta(days=1)).isoformat()
+
+        task1 = TaskItem(
+            group_id=grp1.id,
+            board_id=board.id,
+            title="Tarea 1",
+            status_key="in_progress",
+            priority="low",
+            assignee_id=user.id,
+            due_date=due_yesterday,
+            budget=100.0,
+            estimated_hours=4.0,
+            notes="Elementos de acción y entregables principales",
+            position=0,
+        )
+        task2 = TaskItem(
+            group_id=grp1.id,
+            board_id=board.id,
+            title="Tarea 2",
+            status_key="done",
+            priority="high",
+            assignee_id=None,
+            due_date=due_today,
+            budget=1000.0,
+            estimated_hours=8.0,
+            notes="Notas de la reunión y seguimiento con el equipo",
+            position=1,
+        )
+        task3 = TaskItem(
+            group_id=grp1.id,
+            board_id=board.id,
+            title="Tarea 3",
+            status_key="blocked",
+            priority="medium",
+            assignee_id=None,
+            due_date=due_tomorrow,
+            budget=500.0,
+            estimated_hours=2.0,
+            notes="Revisión técnica y control de calidad",
+            position=2,
+        )
+        db.add_all([task1, task2, task3])
 
         db.add_all([
             BoardAutomation(

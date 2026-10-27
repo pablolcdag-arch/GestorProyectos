@@ -248,6 +248,31 @@
 - **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.15s, 47/47 tests en Vitest y 29/29 tests en Pytest pasando al 100% (**76 tests automatizados en verde con 0 fallos ni regresiones**).
 - **Impacto:** Gestor de Proyectos cuenta con paridad estética, de componentes, diseño atómico y flujo interactivo idéntico a Monday.com, respaldado por una suite integral de tests automatizados y arquitectura modular desacoplada.
 
+---
+
+## [27/10/2026] — Sprint Onboarding Automático 1:1 Monday.com y Despliegue en Producción Vercel
+- **Decisión:**
+  1. **Aprovisionamiento Automático de Onboarding por Usuario:**
+     - En `backend/app/auth.py`, se refactoriza `ensure_user_default_workspace` para verificar la existencia de espacios por `owner_id == user.id` (en lugar de una cuenta global de workspaces en base de datos).
+     - Si el usuario no tiene workspace ni tableros, el backend crea de forma aislada e idempotente:
+       - Espacio de trabajo: `"Mi Espacio de Trabajo"`.
+       - Tablero oficial de bienvenida: `"Primer proyecto"` con sus 5 estados estándar de Monday.
+       - Grupos oficiales de Monday: `"Pendientes"` (`#579bfc`) y `"Completado"` (`#00c875`).
+       - 3 tareas de bienvenida en `"Pendientes"` con la plantilla idéntica a Monday.com:
+         - **Tarea 1:** Asignada al usuario actual, Estado `in_progress`, Prioridad `low`, Presupuesto `$100.0`.
+         - **Tarea 2:** Sin asignar, Estado `done`, Prioridad `high`, Presupuesto `$1,000.0`.
+         - **Tarea 3:** Sin asignar, Estado `blocked`, Prioridad `medium`, Presupuesto `$500.0`.
+         - Presupuesto acumulado del grupo: exactamente `$1,600.0` (idéntico a Monday).
+       - 3 reglas reactivas de automatización por defecto.
+  2. **Garantía de Onboarding en `GET /api/workspaces`:**
+     - En `backend/app/routers/workspaces_router.py`, se ejecuta defensivamente `ensure_user_default_workspace(db, current_user)` en `list_workspaces`, asegurando que incluso usuarios preexistentes con 0 tableros reciban de inmediato el tablero de bienvenida.
+  3. **Auto-selección Reactiva en el Frontend:**
+     - El store `useWorkspaceStore.ts` selecciona automáticamente el primer tablero del espacio al cargar (`loadWorkspaces`), eliminando cualquier estado vacío o pantalla de "0 tableros".
+  4. **Despliegue a Producción Vercel:**
+     - Se actualiza y despliega la SPA en Vercel (`gestor-proyectos-sandy.vercel.app`) reflejando la totalidad de los 8 Sprints de paridad visual de Monday.com.
+- **Razón:** Garantizar que cualquier usuario nuevo o potencial cliente que ingrese con Google OAuth experimente de inmediato la interfaz completa de Monday.com precargada sin fricción ni estados vacíos.
+- **Impacto:** Auditoría técnica independiente del Verificador Backend con veredicto **APROBADO ✅**, 78 pruebas automatizadas pasando al 100% (**31 en Pytest + 47 en Vitest**) y compilación de producción limpia.
+
 
 
 

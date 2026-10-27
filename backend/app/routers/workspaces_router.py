@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth import get_current_user
+from app.auth import ensure_user_default_workspace, get_current_user
 from app.database import get_db
 from app.models import User, Workspace
 from app.schemas import WorkspaceCreate, WorkspaceRead, WorkspaceUpdate
@@ -21,6 +21,7 @@ def list_workspaces(
     current_user: User = Depends(get_current_user),
 ) -> list[Workspace]:
     """Lista todos los espacios de trabajo ordenados por ID con el resumen de sus tableros."""
+    ensure_user_default_workspace(db, current_user)
     return db.query(Workspace).order_by(Workspace.id.asc()).all()
 
 
