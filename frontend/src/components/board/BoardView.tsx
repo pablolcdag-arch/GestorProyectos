@@ -40,6 +40,7 @@ import {
 } from '../../types';
 import { AutomationsModal } from './AutomationsModal';
 import { DashboardView } from './DashboardView';
+import { GroupFooterSummary } from './GroupFooterSummary';
 import { ItemDetailDrawer } from './ItemDetailDrawer';
 import { KanbanView } from './KanbanView';
 import { StatusCell } from './StatusCell';
@@ -1377,68 +1378,13 @@ export const BoardView: React.FC = () => {
                           </tr>
                         </tbody>
 
-                        {/* Fila inferior de resumen visual con barra de estados y Sumatorias de Horas/Presupuesto */}
-                        {group.items.length > 0 && (
-                          <tfoot>
-                            <tr className="h-9 min-h-[36px] max-h-[36px] bg-[#fafbfc] border-t border-[#d0d4e4]">
-                              <td
-                                colSpan={3}
-                                className="h-9 min-h-[36px] max-h-[36px] px-3 text-right text-xs font-semibold text-[#676879] border-r border-[#d0d4e4]"
-                              >
-                                Progreso del grupo ({totalGroupItems}{' '}
-                                {totalGroupItems === 1 ? 'tarea' : 'tareas'})
-                              </td>
-                              <td className="h-9 min-h-[36px] max-h-[36px] p-1 border-r border-[#d0d4e4]">
-                                <div
-                                  aria-label={`Barra de distribución de estados de ${group.title}`}
-                                  className="w-full h-5 rounded overflow-hidden flex bg-gray-200"
-                                >
-                                  {activeBoard.statuses.map((st) => {
-                                    const count = group.items.filter(
-                                      (i) => i.status_key === st.key,
-                                    ).length;
-                                    if (count === 0) return null;
-                                    const pct = (count / totalGroupItems) * 100;
-                                    return (
-                                      <div
-                                        key={st.id}
-                                        title={`${st.label}: ${count} (${Math.round(pct)}%)`}
-                                        style={{
-                                          width: `${pct}%`,
-                                          backgroundColor: st.color,
-                                        }}
-                                        className="h-full transition-all"
-                                      />
-                                    );
-                                  })}
-                                </div>
-                              </td>
-                              <td
-                                colSpan={2}
-                                className="h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] text-right text-xs font-bold text-[#676879]"
-                              >
-                                Sumatoria:
-                              </td>
-                              <td className="h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] text-center">
-                                <span
-                                  data-testid={`group-sum-hours-${group.id}`}
-                                  className="inline-block px-1.5 py-0.5 rounded bg-[#e6f1fd] text-[#0073ea] text-xs font-extrabold"
-                                >
-                                  {groupTotalHours} h
-                                </span>
-                              </td>
-                              <td className="h-9 min-h-[36px] max-h-[36px] px-2 border-r border-[#d0d4e4] text-center">
-                                <span
-                                  data-testid={`group-sum-budget-${group.id}`}
-                                  className="inline-block px-1.5 py-0.5 rounded bg-emerald-50 text-[#037f4c] text-xs font-extrabold"
-                                >
-                                  ${groupTotalBudget.toLocaleString('en-US')}
-                                </span>
-                              </td>
-                              <td className="h-9 min-h-[36px] max-h-[36px] border-r border-[#d0d4e4]" />
-                            </tr>
-                          </tfoot>
-                        )}
+                        {/* Fila inferior de resumen visual con Battery Summary y Sumatorias 1:1 Monday.com */}
+                        <GroupFooterSummary
+                          group={group}
+                          statuses={activeBoard.statuses}
+                          groupTotalHours={groupTotalHours}
+                          groupTotalBudget={groupTotalBudget}
+                        />
                       </table>
                     </div>
                   </div>

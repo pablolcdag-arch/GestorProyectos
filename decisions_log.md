@@ -166,6 +166,21 @@
 - **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite limpio con 0 errores, 27/27 tests en Vitest y 29/29 tests en Pytest pasando al 100% (56 tests en verde sin regresiones).
 - **Impacto:** Experiencia de selección y personalización de estados idéntica a Monday.com, sin callejones sin salida y totalmente testeada.
 
+---
+
+## [26/10/2026] — Sprint 3: Barra de Resumen en Pie de Grupo (Battery Summary) y Acumuladores 1:1 Monday.com
+- **Decisión:**
+  1. **Alineación Celda por Celda en `tfoot`:**
+     - Se elimina el uso de `colSpan` desfasados en el pie de tabla de cada grupo, alineando estrictamente cada columna a 36px de altura (`h-9 min-h-[36px] max-h-[36px]`) y bordes `#d0d4e4`.
+  2. **Componente GroupFooterSummary y Baterías de Estado y Prioridad:**
+     - Se crea `frontend/src/components/board/GroupFooterSummary.tsx` implementando barras de batería segmentadas continuas con esquinas redondeadas (`rounded-[3px]`), proporciones exactas por estado/prioridad y tooltips informativos con conteos y porcentajes al posar el cursor.
+  3. **Píldora de Rango Acumulado y Sumatorias Numéricas:**
+     - Se incorpora el cálculo automático de rango de fechas (`min - max`, ej: `oct. 25 - 27`) presentado como píldora centrada azul `#0073ea`.
+     - Se estandarizan las sumatorias de horas y presupuestos con sufijo "Total" preservando los identificadores `group-sum-hours-*` y `group-sum-budget-*`.
+- **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.12s, 30/30 tests en Vitest y 29/29 tests en Pytest pasando al 100% (59 tests en verde sin regresiones).
+- **Impacto:** Resumen visual continuo y métricas instantáneas por grupo idénticas a Monday.com con modularidad desacoplada.
+
+
 
 
 
