@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
   AlertCircle,
   Check,
+  ChevronDown,
+  ChevronUp,
   Palette,
   Plus,
   Save,
@@ -40,6 +42,8 @@ export const StatusManagerModal: React.FC<StatusManagerModalProps> = ({
   const [drafts, setDrafts] = useState<Record<number, DraftStatus>>({});
   const [newLabel, setNewLabel] = useState('');
   const [newColor, setNewColor] = useState('#0073ea');
+  const [activePaletteStatusId, setActivePaletteStatusId] = useState<number | null>(null);
+  const [isNewStatusPaletteOpen, setIsNewStatusPaletteOpen] = useState(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [savedStatusId, setSavedStatusId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,12 +99,41 @@ export const StatusManagerModal: React.FC<StatusManagerModalProps> = ({
         color: cleanedColor,
       });
       setSavedStatusId(st.id);
+      setActivePaletteStatusId(null);
       setTimeout(() => {
         setSavedStatusId((current) => (current === st.id ? null : current));
       }, 1500);
     } catch (err) {
       setFeedbackError(
         err instanceof Error ? err.message : 'No se pudo actualizar el estado.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleApplyAllChanges = async () => {
+    setFeedbackError(null);
+    setIsSubmitting(true);
+    try {
+      for (const st of statuses) {
+        const draft = drafts[st.id];
+        if (!draft) continue;
+        const cleanedLabel = draft.label.trim();
+        const cleanedColor = draft.color.trim().toLowerCase();
+
+        if (cleanedLabel !== st.label || cleanedColor !== st.color.toLowerCase()) {
+          if (!cleanedLabel || !HEX_REGEX.test(cleanedColor)) continue;
+          await updateBoardStatus(boardId, st.id, {
+            label: cleanedLabel,
+            color: cleanedColor,
+          });
+        }
+      }
+      onClose();
+    } catch (err) {
+      setFeedbackError(
+        err instanceof Error ? err.message : 'No se pudieron aplicar todos los cambios.',
       );
     } finally {
       setIsSubmitting(false);
@@ -147,6 +180,7 @@ export const StatusManagerModal: React.FC<StatusManagerModalProps> = ({
       });
       setNewLabel('');
       setNewColor('#0073ea');
+      setIsNewStatusPaletteOpen(false);
     } catch (err) {
       setFeedbackError(
         err instanceof Error ? err.message : 'No se pudo crear el estado.',
@@ -176,10 +210,10 @@ export const StatusManagerModal: React.FC<StatusManagerModalProps> = ({
                 id="status-modal-title"
                 className="text-base font-bold text-[#323338]"
               >
-                Personalizar Estados del Tablero
+                Personalizar Etiquetas de Estado
               </h2>
               <p className="text-xs text-[#676879]">
-                Editá las etiquetas, colores hexadecimales o agregá nuevos estados a medida
+                Editá nombres, seleccioná entre la paleta oficial de 40 colores de Monday.com o agregá nuevos estados
               </p>
             </div>
           </div>
@@ -215,6 +249,7 @@ export const StatusManagerModal: React.FC<StatusManagerModalProps> = ({
               };
               const isOnlyOneRemaining = statuses.length <= 1;
               const wasJustSaved = savedStatusId === st.id;
+              const isPaletteOpen = activePaletteStatusId === st.id;
 
               return (
                 <div
@@ -223,9 +258,9 @@ export const StatusManagerModal: React.FC<StatusManagerModalProps> = ({
                   className="p-3.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-all space-y-2.5 shadow-2xs"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
-                    {/* Píldora de vista previa en vivo */}
+                    {/* Píldora de vista previa estilo Monday.com (32px de alto, rounded-[2px]) */}
                     <div
-                      className="px-3 py-1.5 rounded-md text-white text-xs font-semibold text-center sm:w-36 shrink-0 truncate shadow-2xs"
+                      className="px-3 h-8 rounded-[2px] text-white text-xs font-bold text-center sm:w-36 shrink-0 truncate shadow-2xs flex items-center justify-center"
                       style={{
                         backgroundColor: HEX_REGEX.test(draft.color)
                           ? draft.color
@@ -248,7 +283,27 @@ export const StatusManagerModal: React.FC<StatusManagerModalProps> = ({
                       placeholder="Nombre del estado"
                     />
 
-                    {/* Input hexadecimal #RRGGBB */}
+                    {/* Swatch interactivo que despliega la paleta de 40 colores */}
+                    <button
+                      type="button"
+                      data-testid={`status-color-swatch-${st.key}`}
+                      onClick={() =>
+                        setActivePaletteStatusId((prev) =>
+                          prev === st.id ? null : st.id,
+                        )
+                      }
+                      title="Seleccionar de la paleta de 40 colores"
+                      className="w-8 h-8 rounded-md border border-gray-300 shadow-2xs cursor-pointer flex items-center justify-center transition-transform hover:scale-105 shrink-0"
+                      style={{ backgroundColor: draft.color }}
+                    >
+                      {isPaletteOpen ? (
+                        <ChevronUp className="w-3.5 h-3.5 text-white drop-shadow-xs" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-white drop-shadow-xs" />
+                      )}
+                    </button>
+
+                    {/* Input hexadecimal #RRGGBB (mantenido para tests y edición manual) */}
                     <input
                       type="text"
                       value={draft.color}
@@ -257,7 +312,7 @@ export const StatusManagerModal: React.FC<StatusManagerModalProps> = ({
                       }
                       aria-label={`Color del estado ${st.label}`}
                       data-testid={`status-color-input-${st.key}`}
-                      className="w-24 px-2.5 py-1.5 text-xs font-mono rounded-lg border border-gray-300 focus:outline-none focus:border-[#0073ea]"
+                      className="w-20 px-2 py-1.5 text-xs font-mono rounded-lg border border-gray-300 focus:outline-none focus:border-[#0073ea]"
                       placeholder="#00c875"
                     />
 
@@ -302,52 +357,95 @@ export const StatusManagerModal: React.FC<StatusManagerModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Selector rápido de colores predefinidos */}
-                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                    <span className="text-[11px] text-[#676879] mr-1">
-                      Paleta:
-                    </span>
-                    {MONDAY_COLOR_PALETTE.map((hex) => (
-                      <button
-                        key={hex}
-                        type="button"
-                        onClick={() => handleDraftChange(st.id, 'color', hex)}
-                        aria-label={`Seleccionar color ${hex} para ${st.label}`}
-                        className={`w-4 h-4 rounded-full transition-transform cursor-pointer ${
-                          draft.color.toLowerCase() === hex.toLowerCase()
-                            ? 'ring-2 ring-offset-1 ring-[#323338] scale-110'
-                            : 'opacity-80 hover:opacity-100'
-                        }`}
-                        style={{ backgroundColor: hex }}
-                      />
-                    ))}
-                  </div>
+                  {/* Matriz Completa de 40 Colores (5 columnas x 8 filas) desplegable */}
+                  {isPaletteOpen && (
+                    <div className="mt-2 p-3 bg-[#f6f7fb] rounded-xl border border-[#d0d4e4] space-y-2 animate-in fade-in duration-100">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-[#676879] uppercase tracking-wider">
+                        <span>Paleta oficial de Monday.com (40 colores)</span>
+                        <span className="text-[#323338] font-mono lowercase">
+                          {draft.color}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-5 sm:grid-cols-8 gap-1.5">
+                        {MONDAY_COLOR_PALETTE.map((hex) => {
+                          const isSelected =
+                            draft.color.toLowerCase() === hex.toLowerCase();
+                          return (
+                            <button
+                              key={hex}
+                              type="button"
+                              data-testid={`palette-color-${hex.replace('#', '')}`}
+                              onClick={() =>
+                                handleDraftChange(st.id, 'color', hex)
+                              }
+                              aria-label={`Seleccionar color ${hex} para ${st.label}`}
+                              className={`h-7 rounded-[3px] transition-transform hover:scale-105 cursor-pointer shadow-xs relative flex items-center justify-center ${
+                                isSelected
+                                  ? 'ring-2 ring-offset-1 ring-[#323338] scale-105 z-10'
+                                  : 'opacity-90 hover:opacity-100'
+                              }`}
+                              style={{ backgroundColor: hex }}
+                            >
+                              {isSelected && (
+                                <Check className="w-3.5 h-3.5 text-white drop-shadow-xs" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* Pie del Modal: Formulario para Agregar nuevo estado */}
+        {/* Pie del Modal: Formulario para Agregar nuevo estado y Botón Aplicar */}
         <form
           onSubmit={(e) => void handleAddStatus(e)}
           data-testid="form-add-status"
           className="px-6 py-4 bg-[#f7f8fa] border-t border-gray-200 space-y-3"
         >
-          <p className="text-xs font-bold uppercase tracking-wider text-[#323338]">
-            Agregar nuevo estado
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#323338]">
+              + Agregar nueva etiqueta
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsNewStatusPaletteOpen((prev) => !prev)}
+              className="text-[11px] font-semibold text-[#0073ea] hover:underline cursor-pointer flex items-center gap-1"
+            >
+              <span>Paleta de 40 colores</span>
+              {isNewStatusPaletteOpen ? (
+                <ChevronUp className="w-3 h-3" />
+              ) : (
+                <ChevronDown className="w-3 h-3" />
+              )}
+            </button>
+          </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
             <input
               type="text"
-              placeholder="Nombre del nuevo estado (ej: En Revisión QA)"
+              placeholder="Nombre de la nueva etiqueta (ej: En Revisión QA)"
               aria-label="Nombre del nuevo estado"
               data-testid="input-new-status-label"
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
               className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-[#0073ea]"
             />
+
+            {/* Swatch para nuevo estado */}
+            <button
+              type="button"
+              data-testid="new-status-color-swatch"
+              onClick={() => setIsNewStatusPaletteOpen((prev) => !prev)}
+              className="w-9 h-8 rounded-md border border-gray-300 shadow-2xs cursor-pointer flex items-center justify-center shrink-0"
+              style={{ backgroundColor: newColor }}
+            >
+              <Palette className="w-4 h-4 text-white drop-shadow-xs" />
+            </button>
 
             <input
               type="text"
@@ -356,7 +454,7 @@ export const StatusManagerModal: React.FC<StatusManagerModalProps> = ({
               data-testid="input-new-status-color"
               value={newColor}
               onChange={(e) => setNewColor(e.target.value)}
-              className="w-28 px-3 py-2 text-xs font-mono rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-[#0073ea]"
+              className="w-24 px-3 py-2 text-xs font-mono rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-[#0073ea]"
             />
 
             <button
@@ -366,40 +464,70 @@ export const StatusManagerModal: React.FC<StatusManagerModalProps> = ({
               className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-[#00c875] hover:bg-[#00b067] text-white text-xs font-bold transition-colors cursor-pointer shrink-0 disabled:opacity-50"
             >
               <Plus className="w-4 h-4" />
-              <span>Agregar estado</span>
+              <span>Agregar etiqueta</span>
             </button>
           </div>
 
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] text-[#676879]">Color rápido:</span>
-              {MONDAY_COLOR_PALETTE.map((hex) => (
-                <button
-                  key={hex}
-                  type="button"
-                  onClick={() => setNewColor(hex)}
-                  aria-label={`Color nuevo estado ${hex}`}
-                  className={`w-4 h-4 rounded-full transition-transform cursor-pointer ${
-                    newColor.toLowerCase() === hex.toLowerCase()
-                      ? 'ring-2 ring-offset-1 ring-[#323338] scale-110'
-                      : 'opacity-80 hover:opacity-100'
-                  }`}
-                  style={{ backgroundColor: hex }}
-                />
-              ))}
+          {/* Paleta de 40 colores para nuevo estado */}
+          {isNewStatusPaletteOpen && (
+            <div className="p-3 bg-white rounded-xl border border-[#d0d4e4] space-y-2 animate-in fade-in duration-100">
+              <span className="text-[11px] font-bold text-[#676879] uppercase tracking-wider">
+                Seleccionar color para nueva etiqueta:
+              </span>
+              <div className="grid grid-cols-5 sm:grid-cols-8 gap-1.5">
+                {MONDAY_COLOR_PALETTE.map((hex) => {
+                  const isSelected = newColor.toLowerCase() === hex.toLowerCase();
+                  return (
+                    <button
+                      key={hex}
+                      type="button"
+                      data-testid={`new-palette-color-${hex.replace('#', '')}`}
+                      onClick={() => setNewColor(hex)}
+                      className={`h-7 rounded-[3px] transition-transform hover:scale-105 cursor-pointer shadow-xs relative flex items-center justify-center ${
+                        isSelected
+                          ? 'ring-2 ring-offset-1 ring-[#323338] scale-105 z-10'
+                          : 'opacity-90 hover:opacity-100'
+                      }`}
+                      style={{ backgroundColor: hex }}
+                    >
+                      {isSelected && (
+                        <Check className="w-3.5 h-3.5 text-white drop-shadow-xs" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+          )}
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-[#323338] cursor-pointer"
-            >
-              Cerrar
-            </button>
+          {/* Barra de acciones finales */}
+          <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+            <span className="text-xs text-[#676879]">
+              Total: <strong>{statuses.length}</strong> etiquetas configuradas
+            </span>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-xs font-semibold text-[#323338] cursor-pointer"
+              >
+                Cerrar
+              </button>
+
+              <button
+                type="button"
+                data-testid="btn-apply-status-changes"
+                disabled={isSubmitting}
+                onClick={() => void handleApplyAllChanges()}
+                className="px-5 py-2 rounded-lg bg-[#0073ea] hover:bg-[#0060b9] text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50 transition-colors"
+              >
+                Aplicar
+              </button>
+            </div>
           </div>
         </form>
       </div>
     </div>
   );
 };
-

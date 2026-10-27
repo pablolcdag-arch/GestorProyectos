@@ -42,6 +42,7 @@ import { AutomationsModal } from './AutomationsModal';
 import { DashboardView } from './DashboardView';
 import { ItemDetailDrawer } from './ItemDetailDrawer';
 import { KanbanView } from './KanbanView';
+import { StatusCell } from './StatusCell';
 import { StatusManagerModal } from './StatusManagerModal';
 import { TimelineCalendarView } from './TimelineCalendarView';
 
@@ -889,11 +890,6 @@ export const BoardView: React.FC = () => {
                         </thead>
                         <tbody className="divide-y divide-[#d0d4e4] text-xs">
                           {visibleItems.map((item) => {
-                            const statusCfg = statusMap.get(item.status_key);
-                            const statusLabel =
-                              statusCfg?.label ?? item.status_key;
-                            const statusColor = statusCfg?.color ?? '#c4c4c4';
-
                             const priorityMeta = PRIORITY_MAP[
                               item.priority.toLowerCase()
                             ] ?? {
@@ -1115,32 +1111,18 @@ export const BoardView: React.FC = () => {
 
                                 {/* Columna 3: Estado */}
                                 <td className="w-[134px] min-w-[134px] h-9 min-h-[36px] max-h-[36px] p-0.5 border-r border-[#d0d4e4] text-center focus-within:border-[#0073ea] focus-within:ring-1 focus-within:ring-[#0073ea]">
-                                  <div className="relative w-full h-full flex items-center justify-center">
-                                    <div
-                                      data-testid={`task-status-badge-${item.id}`}
-                                      className="w-full h-7 rounded text-center text-xs font-semibold text-white shadow-2xs truncate flex items-center justify-center px-2 pointer-events-none"
-                                      style={{ backgroundColor: statusColor }}
-                                    >
-                                      {statusLabel}
-                                    </div>
-                                    <select
-                                      data-testid={`task-status-select-${item.id}`}
-                                      aria-label={`Estado de ${item.title}`}
-                                      value={item.status_key}
-                                      onChange={(e) =>
-                                        void handleInlineUpdate(item.id, {
-                                          status_key: e.target.value,
-                                        })
-                                      }
-                                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    >
-                                      {activeBoard.statuses.map((st) => (
-                                        <option key={st.key} value={st.key}>
-                                          {st.label}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
+                                  <StatusCell
+                                    itemId={item.id}
+                                    itemTitle={item.title}
+                                    statusKey={item.status_key}
+                                    statuses={activeBoard.statuses}
+                                    onSelectStatus={(newKey) =>
+                                      void handleInlineUpdate(item.id, {
+                                        status_key: newKey,
+                                      })
+                                    }
+                                    onEditLabels={() => setIsStatusModalOpen(true)}
+                                  />
                                 </td>
 
                                 {/* Columna 4: Prioridad */}

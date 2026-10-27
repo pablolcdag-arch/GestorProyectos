@@ -150,6 +150,23 @@
 - **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite exitoso en 1.68s, 24/24 tests en Vitest y 29/29 tests en Pytest pasando al 100% (53 tests en verde sin regresiones).
 - **Impacto:** La tabla principal alcanza paridad estética y geométrica inmediata con Monday.com, sentando las bases visuales para los componentes avanzados de los siguientes sprints.
 
+---
+
+## [26/10/2026] — Sprint 2: Componente Status Picker Custom y Modo "Editar Etiquetas" con Paleta Oficial de 40 Colores
+- **Decisión:**
+  1. **Componente StatusCell y Popover Flotante:**
+     - Se reemplaza el select nativo invisible por el componente `StatusCell.tsx`, con píldora visible auténtica de Monday.com (altura `32px`, bordes suaves `rounded-[2px]`, tipografía blanca en negrita).
+     - Al hacer clic despliega un popover flotante con la lista de estados, checkmark activo, soporte de click-outside y cierre con tecla Escape.
+     - Preserva la accesibilidad y retrocompatibilidad de pruebas mediante un `<select className="sr-only">`.
+  2. **Modo "Editar Etiquetas" y Paleta Oficial Completa (40 Colores):**
+     - Se expande `MONDAY_COLOR_PALETTE` en `frontend/src/types/index.ts` a la matriz completa de 40 colores (5 columnas x 8 filas) extraída en vivo de Monday.com.
+     - El botón "Editar etiquetas" enlaza con `StatusManagerModal.tsx`, permitiendo renombrar inline, cambiar colores desde la matriz interactiva y persistir cambios al backend vía `/api/boards/{board_id}/statuses`.
+  3. **Blindaje del Formato Ultra-Compacto SDD:**
+     - Se actualiza `.agents/AGENTS.md` limitando los reportes de Implementador y Verificador a un formato sintético de máximo 10-15 líneas en un único bloque de código Markdown.
+- **Razón:** Auditoría técnica independiente del Verificador Frontend con veredicto **APROBADO ✅**, build de producción de Vite limpio con 0 errores, 27/27 tests en Vitest y 29/29 tests en Pytest pasando al 100% (56 tests en verde sin regresiones).
+- **Impacto:** Experiencia de selección y personalización de estados idéntica a Monday.com, sin callejones sin salida y totalmente testeada.
+
+
 
 
 

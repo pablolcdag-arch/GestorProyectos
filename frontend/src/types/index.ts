@@ -384,16 +384,59 @@ export const PRIORITY_MAP: Record<string, PriorityMeta> = {
 };
 
 export const MONDAY_COLOR_PALETTE: string[] = [
-  '#00c875', // Verde (Listo)
-  '#fdab3d', // Naranja (En Proceso)
-  '#e2445c', // Rojo (Bloqueado)
-  '#a25ddc', // Violeta (Traspasado)
-  '#c4c4c4', // Gris (Sin Empezar)
-  '#0073ea', // Azul Monday
-  '#579bfc', // Azul Claro
-  '#ff158a', // Rosa Intenso
-  '#cab641', // Amarillo Mostaza
-  '#037f4c', // Verde Oscuro
-  '#784bd1', // Púrpura
-  '#66ccff', // Celeste
+  // Fila 1 - Verdes
+  '#037f4c', // grass_green
+  '#00c875', // done_green
+  '#9cd326', // bright_green
+  '#cab641', // saladish
+  '#50c878', // emerald
+
+  // Fila 2 - Amarillos y Naranjas
+  '#ffcb00', // egg_yolk
+  '#fdab3d', // in_progress_orange
+  '#ff6d3b', // dark_orange
+  '#ffadad', // peach
+  '#ff7575', // sunset
+
+  // Fila 3 - Rojos y Rosas
+  '#e2445c', // stuck_red
+  '#bb3354', // dark_red
+  '#e50073', // sofia_pink
+  '#ff5ac4', // lipstick
+  '#faa1f1', // bubble
+
+  // Fila 4 - Fucsias y Violetas
+  '#ff158a', // hot_pink
+  '#9d50dd', // purple
+  '#a25ddc', // handed_over_purple
+  '#784bd1', // dark_purple
+  '#7e3b8a', // berry
+
+  // Fila 5 - Púrpuras, Índigos y Azul Monday
+  '#401694', // dark_indigo
+  '#5559df', // indigo
+  '#225091', // navy
+  '#0073ea', // monday_blue
+  '#579bfc', // bright_blue
+
+  // Fila 6 - Azules y Celestes
+  '#007eb5', // dark_blue
+  '#4eccc6', // aquamarine
+  '#66ccff', // chili_blue
+  '#68a1bd', // river
+  '#a1e3f6', // winter_sky
+
+  // Fila 7 - Turquesa, Menta, Lima y Tierras
+  '#20d9d2', // turquoise
+  '#80f4cf', // mint
+  '#b2e353', // lime
+  '#d8c8b8', // sand
+  '#bf9d7a', // tan
+
+  // Fila 8 - Café, Neutros y Grises
+  '#7f5347', // coffee
+  '#c4c4c4', // grey_not_started
+  '#808080', // steel_grey
+  '#999999', // light_grey
+  '#333333', // charcoal
 ];
